@@ -46,7 +46,7 @@ PRODUCTOS = {
     "EC0004": Producto(
         "EC0004", "Tilvamune 5% Premix", "kg", 25, 20.80, "Polvo Soluble", 50.0,  # mg/g
         dosis_aves=dosis("pv", 500.0, 500.0),   # 100 g / 200 kg PV = 500 mg/kg CORREGIR
-        dosis_cerdos=dosis("feed", 1.0, 2.0)    # 1-2 kg/TM PV
+        dosis_cerdos=dosis("pv", 1.0, 2.0)    # 1-2 kg/TM PV
     ),
     "EC0005": Producto(
         "EC0005", "Neomicin 50", "kg", 25, 21.90, "Polvo Soluble", 500.0,
@@ -121,7 +121,7 @@ def calcular_producto_necesario(producto: Producto, especie: str, dosis_elegida:
 
     elif tipo_dosis == "pv":
         # dosis_elegida está en mg/kg PV
-        mg_necesarios = dosis_elegida * peso_animal_kg * num_animales
+        mg_necesarios = dosis_elegida * peso_animal_kg * num_animales #Aumentar Días
         if producto.unidad == "kg":
             # Concentración en mg/g -> mg por kg = concentracion * 1000
             mg_por_kg = producto.concentracion * 1000
@@ -281,7 +281,7 @@ def main():
         st.metric("Cantidad total de alimento", f"{alimento_ton:.2f} toneladas")
     with col_res2:
         unidad = producto.unidad
-        st.metric(f"Cantidad total de producto necesario", f"{cantidad_producto:.3f} {unidad}")
+        st.metric(f"Cantidad total de producto necesario", f"{cantidad_producto:.2f} {unidad}")
     with col_res3:
         st.metric("Precio estimado", f"${precio_total:.2f}")
 
