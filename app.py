@@ -32,53 +32,53 @@ def dosis(tipo, min_dosis, max_dosis):
 # Catálogo de productos
 PRODUCTOS = {
     "EC0001": Producto(
-        "EC0001", "Vitabland - Pro Gallinas/Postura Px", "kg", 25, 3.95, "Premezcla", None,
-        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=None
+        "EC0001", "Vitablend - Pro Gallinas/Postura Px", "kg", 25, 3.95, "Premezcla", None,
+        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=None #Dosis es Kg/TM alimento
     ),
     "EC0002": Producto(
-        "EC0002", "Vitabland - Pro Broilers Inicio-Crecimiento-Engorde", "kg", 25, 4.40, "Premezcla", None,
-        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=None
+        "EC0002", "Vitablend - Pro Broilers Inicio-Crecimiento-Engorde", "kg", 25, 4.40, "Premezcla", None,
+        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=None #Dosis es Kg/TM alimento
     ),
     "EC0003": Producto(
-        "EC0003", "Vitabland - Pro Cerdos Inicio y Reproductores", "kg", 25, 4.95, "Premezcla", None,
-        dosis_aves=None, dosis_cerdos=dosis("feed", 1.0, 1.0)
+        "EC0003", "Vitablend - Pro Cerdos Inicio y Reproductores", "kg", 25, 4.95, "Premezcla", None,
+        dosis_aves=None, dosis_cerdos=dosis("feed", 1.0, 1.0) #Dosis es Kg/TM alimento
     ),
     "EC0004": Producto(
         "EC0004", "Tilvamune 5% Premix", "kg", 25, 20.80, "Polvo Soluble", 50.0,  # mg/g
-        dosis_aves=dosis("pv", 500.0, 500.0),   # 100 g / 200 kg PV = 500 mg/kg
-        dosis_cerdos=dosis("feed", 1.0, 2.0)    # 1-2 kg/ton
+        dosis_aves=dosis("pv", 500.0, 500.0),   # 100 g / 200 kg PV = 500 mg/kg CORREGIR
+        dosis_cerdos=dosis("feed", 1.0, 2.0)    # 1-2 kg/TM PV
     ),
     "EC0005": Producto(
         "EC0005", "Neomicin 50", "kg", 25, 21.90, "Polvo Soluble", 500.0,
-        dosis_aves=dosis("feed", 0.14, 0.28), dosis_cerdos=dosis("feed", 0.14, 0.28)
+        dosis_aves=dosis("feed", 0.14, 0.28), dosis_cerdos=dosis("feed", 0.14, 0.28) #Kg / TM Alimento
     ),
     "EC0006": Producto(
         "EC0006", "Tiamulin Premix 100", "kg", 25, 14.25, "Polvo Soluble", 100.0,
-        dosis_aves=dosis("feed", 1.0, 5.0), dosis_cerdos=dosis("feed", 1.0, 5.0)
+        dosis_aves=dosis("feed", 1.0, 5.0), dosis_cerdos=dosis("feed", 1.0, 2.0) #Kg / TM Alimento
     ),
     "EC0007": Producto(
         "EC0007", "Florfen 20", "L", 1, 24.80, "Antibiótico Oral", 200.0,  # mg/ml
-        dosis_aves=dosis("pv", 20.0, 30.0), dosis_cerdos=dosis("pv", 10.0, 20.0)
+        dosis_aves=dosis("pv", 20.0, 30.0), dosis_cerdos=dosis("pv", 10.0, 20.0) #mg / Kg PV
     ),
     "EC0008": Producto(
         "EC0008", "Lincospect 11", "kg", 25, 46.10, "Polvo Soluble", 110.0,
-        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=dosis("feed", 1.0, 1.0)
+        dosis_aves=dosis("feed", 1.0, 1.0), dosis_cerdos=dosis("feed", 0.2, 0.4) #Kg / TM alimento
     ),
     "EC0009": Producto(
         "EC0009", "Enromune 20", "L", 1, 22.00, "Antibiótico Oral", 200.0,
-        dosis_aves=dosis("pv", 10.0, 10.0), dosis_cerdos=dosis("pv", 10.0, 10.0)
+        dosis_aves=dosis("pv", 10.0, 10.0), dosis_cerdos=dosis("pv", 2.5, 5.0) #mg / Kg PV
     ),
     "EC0010": Producto(
         "EC0010", "Clortiamune", "kg", 25, 12.50, "Polvo Soluble", 110.0,
-        dosis_aves=dosis("feed", 1.8, 4.5), dosis_cerdos=dosis("feed", 1.8, 4.5)
+        dosis_aves=dosis("feed", 1.8, 4.5), dosis_cerdos=dosis("feed", 0.5, 3.6) #Kg / TM alimento
     ),
     "EC0011": Producto(
         "EC0011", "Pro-Amox", "kg", 1, 38.00, "Polvo Soluble", 500.0,
-        dosis_aves=dosis("pv", 10.0, 10.0), dosis_cerdos=dosis("pv", 10.0, 10.0)
+        dosis_aves=dosis("pv", 10.0, 10.0), dosis_cerdos=dosis("pv", 10.0, 20.0) #mg / Kg PV
     ),
     "EC0012": Producto(
-        "EC0012", "Vitabland - Pro Cerdos Crecimiento Engorde", "kg", 25, 3.95, "Premezcla", None,
-        dosis_aves=None, dosis_cerdos=dosis("feed", 1.0, 1.0)
+        "EC0012", "Vitablend - Pro Cerdos Crecimiento Engorde", "kg", 25, 3.95, "Premezcla", None,
+        dosis_aves=None, dosis_cerdos=dosis("feed", 1.0, 1.0) #Dosis es Kg/TM alimento
     ),
 }
 
