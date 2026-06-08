@@ -54,9 +54,6 @@ PRODUCTOS = {
 # ------------------------------------------------------------
 # Datos de líneas genéticas para Broilers
 # ------------------------------------------------------------
-
-# COBB500 (datos extraídos de la primera imagen del usuario)
-# Día: peso(g), consumo diario(g)
 cobb500_data = {
     0: (42, 0), 1: (55, 0), 2: (71, 0), 3: (90, 0), 4: (112, 0), 5: (138, 0), 6: (168, 0),
     7: (202, 18), 8: (240, 40), 9: (283, 44), 10: (330, 50), 11: (382, 57), 12: (440, 64),
@@ -71,25 +68,27 @@ cobb500_data = {
     54: (4470, 260), 55: (4557, 261), 56: (4641, 262)
 }
 
-# ROSS308 (datos extraídos de la segunda imagen)
 ross308_data = {
-    0: (44, 0),   1: (62, 12),   2: (81, 28),   3: (102, 48),   4: (125, 72),   5: (151, 100),
-    6: (181, 131), 7: (213, 166), 8: (249, 206), 9: (288, 249), 10: (330, 297), 11: (376, 349),
-    12: (425, 406), 13: (477, 468), 14: (532, 535), 15: (592, 608), 16: (655, 685), 17: (720, 768),
-    18: (789, 856), 19: (860, 950), 20: (935, 1050), 21: (1012, 1155), 22: (1092, 1266),
-    23: (1174, 1383), 24: (1258, 1505), 25: (1345, 1633), 26: (1434, 1767), 27: (1524, 1907),
-    28: (1616, 2051), 29: (1710, 2202), 30: (1805, 2357), 31: (1901, 2518), 32: (1999, 2684),
-    33: (2097, 2855), 34: (2196, 3031), 35: (2296, 3211), 36: (2396, 3396), 37: (2496, 3584),
-    38: (2597, 3777), 39: (2697, 3974), 40: (2798, 4175), 41: (2898, 4379), 42: (2998, 4586),
-    43: (3097, 4797), 44: (3197, 5010), 45: (3295, 5226), 46: (3393, 5445), 47: (3490, 5666),
-    48: (3586, 5890), 49: (3681, 6115), 50: (3776, 6342), 51: (3869, 6571), 52: (3961, 6801),
-    53: (4052, 7032), 54: (4142, 7265), 55: (4230, 7498)
+    1: (62, 12), 2: (81, 28), 3: (102, 48), 4: (125, 72), 5: (151, 100),
+    6: (181, 131), 7: (213, 166), 8: (249, 206), 9: (288, 249), 10: (330, 297),
+    11: (376, 349), 12: (425, 406), 13: (477, 468), 14: (532, 535), 15: (592, 608),
+    16: (655, 685), 17: (720, 768), 18: (789, 856), 19: (860, 950), 20: (935, 1050),
+    21: (1012, 1155), 22: (1092, 1266), 23: (1174, 1383), 24: (1258, 1505), 25: (1345, 1633),
+    26: (1434, 1767), 27: (1524, 1907), 28: (1616, 2051), 29: (1710, 2202), 30: (1805, 2357),
+    31: (1901, 2518), 32: (1999, 2684), 33: (2097, 2855), 34: (2196, 3031), 35: (2296, 3211),
+    36: (2396, 3396), 37: (2496, 3584), 38: (2597, 3777), 39: (2697, 3974), 40: (2798, 4175),
+    41: (2898, 4379), 42: (2998, 4586), 43: (3097, 4797), 44: (3197, 5010), 45: (3295, 5226),
+    46: (3393, 5445), 47: (3490, 5666), 48: (3586, 5890), 49: (3681, 6115), 50: (3776, 6342),
+    51: (3869, 6571), 52: (3961, 6801), 53: (4052, 7032), 54: (4142, 7265), 55: (4230, 7498)
 }
+# Nota: Ross308 no incluye día 0, empezamos en 1.
 
 def generar_tabla_broiler(linea, dia_inicio, dia_fin):
-    """Genera dataframe para la línea genética seleccionada (Cobb500 o Ross308)"""
+    """Genera dataframe para la línea genética seleccionada, excluyendo día 0."""
     data = cobb500_data if linea == "Cobb500" else ross308_data
-    # Crear lista de días en el rango
+    # Asegurar que no se incluya día 0
+    if dia_inicio == 0:
+        dia_inicio = 1
     dias = list(range(dia_inicio, dia_fin+1))
     pesos_kg = []
     consumos_diarios_kg = []
@@ -97,12 +96,11 @@ def generar_tabla_broiler(linea, dia_inicio, dia_fin):
         if d in data:
             peso_g, consumo_g = data[d]
         else:
-            # Si el día está fuera del rango de datos, usar el último valor disponible
+            # Interpolación o último valor
             max_dia = max(data.keys())
             if d > max_dia:
                 peso_g, consumo_g = data[max_dia]
             else:
-                # Interpolación simple entre días conocidos
                 dias_conocidos = sorted(data.keys())
                 for i in range(len(dias_conocidos)-1):
                     if dias_conocidos[i] <= d <= dias_conocidos[i+1]:
@@ -114,20 +112,23 @@ def generar_tabla_broiler(linea, dia_inicio, dia_fin):
                         break
         pesos_kg.append(round(peso_g/1000.0, 3))
         consumos_diarios_kg.append(round(consumo_g/1000.0, 3))
-    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos_kg, 'Consumo diario (kg)': consumos_diarios_kg})
-    df['Consumo acumulado (kg)'] = df['Consumo diario (kg)'].cumsum().round(3)
+    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos_kg, 'Consumo diario de alimento (kg)': consumos_diarios_kg})
+    df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
     return df
 
 def generar_tabla_ponedora(dia_inicio, dia_fin):
+    if dia_inicio == 0:
+        dia_inicio = 1
     dias = list(range(dia_inicio, dia_fin+1))
     df = pd.DataFrame({'Día': dias})
     df['Peso (kg)'] = 1.5
-    df['Consumo diario (kg)'] = 0.12
-    df['Consumo acumulado (kg)'] = (df['Consumo diario (kg)'].cumsum()).round(3)
+    df['Consumo diario de alimento (kg)'] = 0.12
+    df['Consumo acumulado de alimento (kg)'] = (df['Consumo diario de alimento (kg)'].cumsum()).round(3)
     return df
 
 def generar_tabla_cerdo(dia_inicio, dia_fin):
-    # Curva de crecimiento de cerdo (interpolación simple)
+    if dia_inicio == 0:
+        dia_inicio = 1
     referencia = {0: (20.0, 0.0), 30: (40.0, 1.5), 60: (70.0, 2.5), 90: (95.0, 3.2), 120: (110.0, 3.5)}
     dias = list(range(dia_inicio, dia_fin+1))
     pesos = []
@@ -148,8 +149,8 @@ def generar_tabla_cerdo(dia_inicio, dia_fin):
                     break
         pesos.append(round(peso, 3))
         consumos.append(round(cons, 3))
-    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos, 'Consumo diario (kg)': consumos})
-    df['Consumo acumulado (kg)'] = df['Consumo diario (kg)'].cumsum().round(3)
+    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos, 'Consumo diario de alimento (kg)': consumos})
+    df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
     return df
 
 # ------------------------------------------------------------
@@ -240,6 +241,10 @@ def main():
     # Duración del tratamiento
     st.sidebar.subheader("Duración del tratamiento")
     dia_inicio = st.sidebar.number_input("Día de inicio (edad en días)", min_value=0, value=1, step=1)
+    # Forzar inicio al menos 1 para evitar día 0
+    if dia_inicio == 0:
+        st.sidebar.warning("El día de inicio no puede ser 0. Se usará día 1.")
+        dia_inicio = 1
     if especie == "Aves" and subespecie == "Broilers":
         dia_fin_default = 42
     elif especie == "Aves" and subespecie == "Ponedoras":
@@ -257,34 +262,29 @@ def main():
     else:  # Cerdos
         df_base = generar_tabla_cerdo(dia_inicio, dia_fin)
 
-    # Asegurar que los datos tengan 3 decimales
-    for col in ['Peso (kg)', 'Consumo diario (kg)', 'Consumo acumulado (kg)']:
-        if col in df_base.columns:
-            df_base[col] = df_base[col].round(3)
-
     # Calcular producto diario y precio diario
     df_base['Producto diario (kg/L)'] = df_base.apply(
         lambda row: calcular_producto_diario(producto, especie, dosis_elegida,
-                                             row['Peso (kg)'], row['Consumo diario (kg)'], num_animales), axis=1)
+                                             row['Peso (kg)'], row['Consumo diario de alimento (kg)'], num_animales), axis=1)
     df_base['Precio diario ($)'] = df_base['Producto diario (kg/L)'] * producto.precio
     df_base['Producto acumulado (kg/L)'] = df_base['Producto diario (kg/L)'].cumsum()
     df_base['Precio acumulado ($)'] = df_base['Precio diario ($)'].cumsum()
 
-    # Redondear columnas para mejor visualización
-    df_base['Producto diario (kg/L)'] = df_base['Producto diario (kg/L)'].round(3)
+    # Redondear
+    for col in ['Producto diario (kg/L)', 'Producto acumulado (kg/L)']:
+        df_base[col] = df_base[col].round(3)
     df_base['Precio diario ($)'] = df_base['Precio diario ($)'].round(2)
-    df_base['Producto acumulado (kg/L)'] = df_base['Producto acumulado (kg/L)'].round(3)
     df_base['Precio acumulado ($)'] = df_base['Precio acumulado ($)'].round(2)
 
     # Mostrar tabla editable
     st.subheader("📊 Tabla de tratamiento diario")
-    st.markdown("**Edita las celdas de 'Peso (kg)' y 'Consumo diario (kg)'** – el resto se recalcula automáticamente.")
+    st.markdown("**Edita las celdas de 'Peso (kg)' y 'Consumo diario de alimento (kg)'** – el resto se recalcula automáticamente.")
 
     column_config = {
         "Día": st.column_config.NumberColumn("Día", disabled=True),
         "Peso (kg)": st.column_config.NumberColumn("Peso (kg)", min_value=0.0, step=0.001, format="%.3f"),
-        "Consumo diario (kg)": st.column_config.NumberColumn("Consumo diario (kg)", min_value=0.0, step=0.001, format="%.3f"),
-        "Consumo acumulado (kg)": st.column_config.NumberColumn("Consumo acumulado (kg)", disabled=True, format="%.3f"),
+        "Consumo diario de alimento (kg)": st.column_config.NumberColumn("Consumo diario de alimento (kg)", min_value=0.0, step=0.001, format="%.3f"),
+        "Consumo acumulado de alimento (kg)": st.column_config.NumberColumn("Consumo acumulado de alimento (kg)", disabled=True, format="%.3f"),
         "Producto diario (kg/L)": st.column_config.NumberColumn(f"Producto diario ({producto.unidad})", disabled=True, format="%.3f"),
         "Precio diario ($)": st.column_config.NumberColumn("Precio diario ($)", disabled=True, format="%.2f"),
         "Producto acumulado (kg/L)": st.column_config.NumberColumn(f"Producto acumulado ({producto.unidad})", disabled=True, format="%.3f"),
@@ -294,18 +294,18 @@ def main():
     edited_df = st.data_editor(df_base, column_config=column_config, use_container_width=True, num_rows="fixed")
 
     # Recalcular si se editaron peso o consumo
-    if not edited_df[['Peso (kg)', 'Consumo diario (kg)']].equals(df_base[['Peso (kg)', 'Consumo diario (kg)']]):
-        edited_df['Consumo acumulado (kg)'] = edited_df['Consumo diario (kg)'].cumsum().round(3)
+    if not edited_df[['Peso (kg)', 'Consumo diario de alimento (kg)']].equals(df_base[['Peso (kg)', 'Consumo diario de alimento (kg)']]):
+        edited_df['Consumo acumulado de alimento (kg)'] = edited_df['Consumo diario de alimento (kg)'].cumsum().round(3)
         edited_df['Producto diario (kg/L)'] = edited_df.apply(
             lambda row: calcular_producto_diario(producto, especie, dosis_elegida,
-                                                 row['Peso (kg)'], row['Consumo diario (kg)'], num_animales), axis=1).round(3)
+                                                 row['Peso (kg)'], row['Consumo diario de alimento (kg)'], num_animales), axis=1).round(3)
         edited_df['Precio diario ($)'] = (edited_df['Producto diario (kg/L)'] * producto.precio).round(2)
         edited_df['Producto acumulado (kg/L)'] = edited_df['Producto diario (kg/L)'].cumsum().round(3)
         edited_df['Precio acumulado ($)'] = edited_df['Precio diario ($)'].cumsum().round(2)
         st.rerun()
 
     # Totales finales
-    total_alimento_kg = (edited_df['Consumo diario (kg)'] * num_animales).sum()
+    total_alimento_kg = (edited_df['Consumo diario de alimento (kg)'] * num_animales).sum()
     total_alimento_ton = total_alimento_kg / 1000.0
     total_producto = edited_df['Producto acumulado (kg/L)'].iloc[-1]
     precio_redondeado = math.ceil(total_producto) * producto.precio
