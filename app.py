@@ -241,7 +241,7 @@ def main():
     st.title("💊 Cálculo de Dosis Veterinarias con Tabla Dinámica")
     
     # Logo en la barra lateral
-    st.sidebar.image("logo_promune.png", use_container_width=True)
+    st.sidebar.image("/JDVT2000/Calculador-dosis/logo_promune.png", use_container_width=True)
     
     st.markdown("Selecciona especie, línea genética, producto y dosis. Edita la tabla directamente.")
 
