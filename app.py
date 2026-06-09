@@ -289,7 +289,7 @@ def main():
         st.write(f"**Presentación:** {producto.presentacion_kg} {producto.unidad}")
         # Precio editable
         precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_editable")
-        producto.precio = precio_actual  # Actualizar el precio del objeto para usarlo en cálculos posteriores
+        producto.precio = precio_actual
 
     # Dosis
     if especie == "Aves":
@@ -402,31 +402,34 @@ def main():
     # Totales finales
     total_alimento_kg = (edited_df['Consumo periodo (kg)'] * num_animales).sum()
     total_alimento_ton = total_alimento_kg / 1000.0
-    principio_activo_total = edited_df['Producto acumulado (kg/L)'].iloc[-1]  # ahora llamado "Principio activo total necesario"
+    principio_activo_total = edited_df['Producto acumulado (kg/L)'].iloc[-1]
     
-    # Calcular producto total en envases completos
+    # Calcular producto total en unidades completas (sacos o envases)
     presentacion = producto.presentacion_kg
     envases_necesarios = math.ceil(principio_activo_total / presentacion)
-    producto_total_envases = envases_necesarios * presentacion
-    precio_redondeado = producto_total_envases * producto.precio  # Precio basado en envases completos
+    producto_total_completo = envases_necesarios * presentacion
+    precio_redondeado = producto_total_completo * producto.precio
+
+    # Determinar el término adecuado: "Saco(s)" para kg, "Envase(s)" para L
+    termino_unidad = "Envase(s)" if producto.unidad == "L" else "Saco(s)"
 
     st.header("📊 Resultados finales")
     col_r1, col_r2, col_r3 = st.columns(3)
     with col_r1:
         st.metric("Alimento total", f"{total_alimento_ton:.2f} toneladas")
     with col_r2:
-        st.metric("Principio activo total necesario", f"{principio_activo_total:.3f} {producto.unidad}")
+        st.metric("Principio activo total necesario", f"{principio_activo_total:.2f} {producto.unidad}")
     with col_r3:
         st.metric("Precio estimado (redondeado)", f"${precio_redondeado:.2f}")
 
-    # Mostrar producto total en envases
+    # Mostrar producto total en sacos/envases
     st.metric(
-        label=f"Producto total necesario (envases de {presentacion} {producto.unidad})",
-        value=f"{envases_necesarios} envase(s) → {producto_total_envases:.3f} {producto.unidad}"
+        label=f"Producto total necesario ({termino_unidad} de {presentacion} {producto.unidad})",
+        value=f"{envases_necesarios} {termino_unidad.lower()} → {producto_total_completo:.3f} {producto.unidad}"
     )
 
-    if principio_activo_total != producto_total_envases:
-        st.caption(f"* El principio activo requerido es {principio_activo_total:.3f} {producto.unidad}, pero se deben comprar envases completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_envases:.3f} {producto.unidad}. Precio basado en esta cantidad.")
+    if principio_activo_total != producto_total_completo:
+        st.caption(f"* El principio activo requerido es {principio_activo_total:.2f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
 
     # Descargar CSV
     csv = edited_df.to_csv(index=False).encode('utf-8')
