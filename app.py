@@ -85,7 +85,6 @@ ross308_data = {
 # ------------------------------------------------------------
 # Datos de línea genética para Ponedoras: Hy-Line W-80 (semanas 1 a 100)
 # ------------------------------------------------------------
-# Datos extraídos de las imágenes (promedio entre bajo y alto)
 hyline_w80_data = {
     1: (71.0, 14.5),      # (peso_g, consumo_diario_g)
     2: (131.0, 19.0),
@@ -132,24 +131,47 @@ hyline_w80_data = {
     43: (1655.5, 108.9),
     44: (1657.5, 108.9),
 }
-# Extrapolación para semanas 45-100 (peso aumenta lentamente hasta ~1750g, consumo estable)
+# Extrapolación para semanas 45-100 (Hy-Line)
 last_weight = hyline_w80_data[44][0]  # 1657.5 g
 last_consumo = hyline_w80_data[44][1] # 108.9 g/día
 for semana in range(45, 101):
-    # Incremento de peso: ~1.5 g por semana (lineal hasta 1750)
     peso = last_weight + (semana - 44) * (1750 - last_weight) / (100 - 44)
     hyline_w80_data[semana] = (round(peso, 1), last_consumo)
 
-def generar_tabla_ponedora_hyline(semana_inicio, semana_fin):
-    """Genera tabla para Hy-Line W-80 en semanas (1 a 100)"""
+# ------------------------------------------------------------
+# Nueva línea: Lohmann LSL-Classic (pesos según imágenes, consumo: igual a Hy-Line hasta semana 20, luego 110 g/día)
+# ------------------------------------------------------------
+# Pesos promedio extraídos de las tablas (semanas 1 a 100)
+lohmann_pesos = {
+    1: 75, 2: 125, 3: 187, 4: 257, 5: 338, 6: 432, 7: 530, 8: 627, 9: 722, 10: 814,
+    11: 901, 12: 976, 13: 1041, 14: 1102, 15: 1159, 16: 1215, 17: 1268, 18: 1320, 19: 1371, 20: 1422,
+    21: 1472, 22: 1520, 23: 1562, 24: 1598, 25: 1628, 26: 1648, 27: 1665, 28: 1680, 29: 1690, 30: 1700,
+    31: 1707, 32: 1710, 33: 1713, 34: 1715, 35: 1718, 36: 1720, 37: 1723, 38: 1725, 39: 1728, 40: 1730,
+    41: 1733, 42: 1735, 43: 1738, 44: 1740, 45: 1743, 46: 1745, 47: 1747, 48: 1749, 49: 1751, 50: 1752,
+    51: 1754, 52: 1755, 53: 1756, 54: 1758, 55: 1759, 56: 1760, 57: 1761, 58: 1763, 59: 1764, 60: 1765,
+    61: 1766, 62: 1768, 63: 1769, 64: 1770, 65: 1771, 66: 1773, 67: 1774, 68: 1775, 69: 1776, 70: 1778,
+    71: 1779, 72: 1780, 73: 1781, 74: 1782, 75: 1783, 76: 1784, 77: 1785, 78: 1786, 79: 1787, 80: 1788,
+    81: 1789, 82: 1790, 83: 1791, 84: 1792, 85: 1793, 86: 1794, 87: 1795, 88: 1796, 89: 1797, 90: 1798,
+    91: 1799, 92: 1800, 93: 1801, 94: 1802, 95: 1803, 96: 1804, 97: 1805, 98: 1806, 99: 1807, 100: 1808
+}
+# Ajuste para semanas > 50 que no están en tabla: usar extrapolación suave
+for w in range(51, 101):
+    if w not in lohmann_pesos:
+        # usar el valor de la semana anterior más 1-2 g
+        lohmann_pesos[w] = lohmann_pesos[w-1] + 1
+
+def generar_tabla_ponedora_lohmann(semana_inicio, semana_fin):
+    """Genera tabla para Lohmann LSL-Classic en semanas"""
     semanas = list(range(semana_inicio, semana_fin+1))
     pesos_kg = []
     consumos_semanales_kg = []
     for w in semanas:
-        peso_g, consumo_diario_g = hyline_w80_data.get(w, (None, None))
-        if peso_g is None:
-            # Interpolación simple si no existe (no debería pasar)
-            continue
+        peso_g = lohmann_pesos.get(w, lohmann_pesos[100])  # fallback a semana 100
+        # Consumo diario: hasta semana 20 usa Hy-Line, luego 110 g/día
+        if w <= 20:
+            consumo_diario_g = hyline_w80_data[w][1]
+        else:
+            consumo_diario_g = 110.0  # promedio 105-115
         pesos_kg.append(round(peso_g / 1000.0, 3))
         consumo_semanal_kg = (consumo_diario_g * 7) / 1000.0
         consumos_semanales_kg.append(round(consumo_semanal_kg, 3))
@@ -263,7 +285,7 @@ def main():
         if subespecie == "Broilers":
             linea = st.sidebar.selectbox("Línea genética", ["Cobb500", "Ross308"])
         else:  # Ponedoras
-            linea = st.sidebar.selectbox("Línea genética", ["Hy-Line W-80"])
+            linea = st.sidebar.selectbox("Línea genética", ["Hy-Line W-80", "Lohmann LSL-Classic"])
     else:
         subespecie = None
         linea = None
@@ -347,9 +369,8 @@ def main():
         else:  # Ponedoras
             if linea == "Hy-Line W-80":
                 df_base = generar_tabla_ponedora_hyline(inicio, fin)
-            else:
-                st.error("Línea genética no soportada.")
-                return
+            else:  # Lohmann LSL-Classic
+                df_base = generar_tabla_ponedora_lohmann(inicio, fin)
             col_periodo = "Semana"
             col_consumo = "Consumo semanal de alimento (kg)"
             col_consumo_acum = "Consumo acumulado de alimento (kg)"
