@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import math
 
-st.set_page_config(page_title="Calculador de Dosis Veterinarias", layout="wide")
+st.set_page_config(page_title="Calculador de Dosis Veterinarias", layout="wide", page_icon="🐔")
 
 # ------------------------------------------------------------
 # Definición de productos (sin cambios)
@@ -237,11 +237,10 @@ def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo
 # Interfaz principal
 # ------------------------------------------------------------
 def main():
-    st.set_page_config(page_title="Calculador de Dosis Veterinarias", layout="wide", page_icon="🐔")
     st.title("💊 Cálculo de Dosis Veterinarias con Tabla Dinámica")
     
     # Logo en la barra lateral
-    st.sidebar.image("/JDVT2000/Calculador-dosis/logo_promune.png", use_container_width=True)
+    st.sidebar.image("https://github.com/JDVT2000/Calculador-dosis/blob/05b798581db09d24ec88264e1a374510e91ebbdd/logo-promune.png", use_container_width=True)
     
     st.markdown("Selecciona especie, línea genética, producto y dosis. Edita la tabla directamente.")
 
