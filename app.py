@@ -237,7 +237,12 @@ def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo
 # Interfaz principal
 # ------------------------------------------------------------
 def main():
+    st.set_page_config(page_title="Calculador de Dosis Veterinarias", layout="wide", page_icon="🐔")
     st.title("💊 Cálculo de Dosis Veterinarias con Tabla Dinámica")
+    
+    # Logo en la barra lateral
+    st.sidebar.image("logo_promune.png", use_container_width=True)
+    
     st.markdown("Selecciona especie, línea genética, producto y dosis. Edita la tabla directamente.")
 
     st.sidebar.header("Parámetros generales")
