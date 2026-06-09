@@ -52,7 +52,7 @@ PRODUCTOS = {
 }
 
 # ------------------------------------------------------------
-# Datos de líneas genéticas para Broilers (Cobb500, Ross308)
+# Datos de Broilers (días)
 # ------------------------------------------------------------
 cobb500_data = {
     0: (42, 0), 1: (55, 0), 2: (71, 0), 3: (90, 0), 4: (112, 0), 5: (138, 0), 6: (168, 0),
@@ -82,118 +82,12 @@ ross308_data = {
     54: (4142, 233), 55: (4230, 233), 56: (4318, 234)
 }
 
-# ------------------------------------------------------------
-# Datos de línea genética para Ponedoras: Hy-Line W-80 (semanas 1 a 100)
-# ------------------------------------------------------------
-hyline_w80_data = {
-    1: (71.0, 14.5),      # (peso_g, consumo_diario_g)
-    2: (131.0, 19.0),
-    3: (196.5, 22.5),
-    4: (268.0, 26.5),
-    5: (346.0, 31.5),
-    6: (432.0, 36.0),
-    7: (525.0, 40.5),
-    8: (621.5, 44.0),
-    9: (718.0, 47.0),
-    10: (811.5, 50.0),
-    11: (897.0, 53.0),
-    12: (973.0, 56.0),
-    13: (1039.0, 60.0),
-    14: (1096.5, 63.0),
-    15: (1146.5, 66.0),
-    16: (1193.5, 70.0),
-    17: (1240.5, 73.0),
-    18: (1286.5, 77.25),
-    19: (1329.5, 80.7),
-    20: (1368.0, 84.55),
-    21: (1401.5, 88.15),
-    22: (1432.5, 91.15),
-    23: (1460.5, 93.6),
-    24: (1486.5, 95.7),
-    25: (1511.0, 97.5),
-    26: (1532.5, 99.0),
-    27: (1551.5, 100.25),
-    28: (1568.5, 101.35),
-    29: (1583.0, 102.2),
-    30: (1595.0, 103.05),
-    31: (1606.0, 103.9),
-    32: (1615.0, 104.9),
-    33: (1623.0, 105.6),
-    34: (1629.0, 106.3),
-    35: (1634.0, 107.05),
-    36: (1638.5, 107.55),
-    37: (1642.0, 107.95),
-    38: (1645.5, 108.35),
-    39: (1648.0, 108.6),
-    40: (1650.5, 108.75),
-    41: (1653.0, 108.85),
-    42: (1654.0, 108.9),
-    43: (1655.5, 108.9),
-    44: (1657.5, 108.9),
-}
-# Extrapolación para semanas 45-100 (Hy-Line)
-last_weight = hyline_w80_data[44][0]  # 1657.5 g
-last_consumo = hyline_w80_data[44][1] # 108.9 g/día
-for semana in range(45, 101):
-    peso = last_weight + (semana - 44) * (1750 - last_weight) / (100 - 44)
-    hyline_w80_data[semana] = (round(peso, 1), last_consumo)
-
-# ------------------------------------------------------------
-# Nueva línea: Lohmann LSL-Classic (pesos según imágenes, consumo: igual a Hy-Line hasta semana 20, luego 110 g/día)
-# ------------------------------------------------------------
-# Pesos promedio extraídos de las tablas (semanas 1 a 100)
-lohmann_pesos = {
-    1: 75, 2: 125, 3: 187, 4: 257, 5: 338, 6: 432, 7: 530, 8: 627, 9: 722, 10: 814,
-    11: 901, 12: 976, 13: 1041, 14: 1102, 15: 1159, 16: 1215, 17: 1268, 18: 1320, 19: 1371, 20: 1422,
-    21: 1472, 22: 1520, 23: 1562, 24: 1598, 25: 1628, 26: 1648, 27: 1665, 28: 1680, 29: 1690, 30: 1700,
-    31: 1707, 32: 1710, 33: 1713, 34: 1715, 35: 1718, 36: 1720, 37: 1723, 38: 1725, 39: 1728, 40: 1730,
-    41: 1733, 42: 1735, 43: 1738, 44: 1740, 45: 1743, 46: 1745, 47: 1747, 48: 1749, 49: 1751, 50: 1752,
-    51: 1754, 52: 1755, 53: 1756, 54: 1758, 55: 1759, 56: 1760, 57: 1761, 58: 1763, 59: 1764, 60: 1765,
-    61: 1766, 62: 1768, 63: 1769, 64: 1770, 65: 1771, 66: 1773, 67: 1774, 68: 1775, 69: 1776, 70: 1778,
-    71: 1779, 72: 1780, 73: 1781, 74: 1782, 75: 1783, 76: 1784, 77: 1785, 78: 1786, 79: 1787, 80: 1788,
-    81: 1789, 82: 1790, 83: 1791, 84: 1792, 85: 1793, 86: 1794, 87: 1795, 88: 1796, 89: 1797, 90: 1798,
-    91: 1799, 92: 1800, 93: 1801, 94: 1802, 95: 1803, 96: 1804, 97: 1805, 98: 1806, 99: 1807, 100: 1808
-}
-# Ajuste para semanas > 50 que no están en tabla: usar extrapolación suave
-for w in range(51, 101):
-    if w not in lohmann_pesos:
-        # usar el valor de la semana anterior más 1-2 g
-        lohmann_pesos[w] = lohmann_pesos[w-1] + 1
-
-def generar_tabla_ponedora_lohmann(semana_inicio, semana_fin):
-    """Genera tabla para Lohmann LSL-Classic en semanas"""
-    semanas = list(range(semana_inicio, semana_fin+1))
-    pesos_kg = []
-    consumos_semanales_kg = []
-    for w in semanas:
-        peso_g = lohmann_pesos.get(w, lohmann_pesos[100])  # fallback a semana 100
-        # Consumo diario: hasta semana 20 usa Hy-Line, luego 110 g/día
-        if w <= 20:
-            consumo_diario_g = hyline_w80_data[w][1]
-        else:
-            consumo_diario_g = 110.0  # promedio 105-115
-        pesos_kg.append(round(peso_g / 1000.0, 3))
-        consumo_semanal_kg = (consumo_diario_g * 7) / 1000.0
-        consumos_semanales_kg.append(round(consumo_semanal_kg, 3))
-    df = pd.DataFrame({
-        'Semana': semanas,
-        'Peso (kg)': pesos_kg,
-        'Consumo semanal de alimento (kg)': consumos_semanales_kg
-    })
-    df['Consumo acumulado de alimento (kg)'] = df['Consumo semanal de alimento (kg)'].cumsum().round(3)
-    return df
-
-# ------------------------------------------------------------
-# Funciones originales para Broilers y Cerdos (días)
-# ------------------------------------------------------------
 def generar_tabla_broiler(linea, dia_inicio, dia_fin):
-    """Genera dataframe para la línea genética seleccionada, excluyendo día 0."""
     data = cobb500_data if linea == "Cobb500" else ross308_data
     if dia_inicio == 0:
         dia_inicio = 1
     dias = list(range(dia_inicio, dia_fin+1))
-    pesos_kg = []
-    consumos_diarios_kg = []
+    pesos_kg, consumos_diarios_kg = [], []
     for d in dias:
         if d in data:
             peso_g, consumo_g = data[d]
@@ -217,13 +111,87 @@ def generar_tabla_broiler(linea, dia_inicio, dia_fin):
     df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
     return df
 
+# ------------------------------------------------------------
+# Datos de Ponedoras: Hy-Line W-80 (semanas)
+# ------------------------------------------------------------
+hyline_w80_data = {
+    1: (71.0, 14.5), 2: (131.0, 19.0), 3: (196.5, 22.5), 4: (268.0, 26.5), 5: (346.0, 31.5),
+    6: (432.0, 36.0), 7: (525.0, 40.5), 8: (621.5, 44.0), 9: (718.0, 47.0), 10: (811.5, 50.0),
+    11: (897.0, 53.0), 12: (973.0, 56.0), 13: (1039.0, 60.0), 14: (1096.5, 63.0), 15: (1146.5, 66.0),
+    16: (1193.5, 70.0), 17: (1240.5, 73.0), 18: (1286.5, 77.25), 19: (1329.5, 80.7), 20: (1368.0, 84.55),
+    21: (1401.5, 88.15), 22: (1432.5, 91.15), 23: (1460.5, 93.6), 24: (1486.5, 95.7), 25: (1511.0, 97.5),
+    26: (1532.5, 99.0), 27: (1551.5, 100.25), 28: (1568.5, 101.35), 29: (1583.0, 102.2), 30: (1595.0, 103.05),
+    31: (1606.0, 103.9), 32: (1615.0, 104.9), 33: (1623.0, 105.6), 34: (1629.0, 106.3), 35: (1634.0, 107.05),
+    36: (1638.5, 107.55), 37: (1642.0, 107.95), 38: (1645.5, 108.35), 39: (1648.0, 108.6), 40: (1650.5, 108.75),
+    41: (1653.0, 108.85), 42: (1654.0, 108.9), 43: (1655.5, 108.9), 44: (1657.5, 108.9),
+}
+# Extrapolación Hy-Line semanas 45-100
+last_weight = hyline_w80_data[44][0]
+last_consumo = hyline_w80_data[44][1]
+for semana in range(45, 101):
+    peso = last_weight + (semana - 44) * (1750 - last_weight) / (100 - 44)
+    hyline_w80_data[semana] = (round(peso, 1), last_consumo)
+
+def generar_tabla_ponedora_hyline(semana_inicio, semana_fin):
+    semanas = list(range(semana_inicio, semana_fin+1))
+    pesos_kg, consumos_semanales_kg = [], []
+    for w in semanas:
+        peso_g, consumo_diario_g = hyline_w80_data.get(w, (hyline_w80_data[100][0], hyline_w80_data[100][1]))
+        pesos_kg.append(round(peso_g / 1000.0, 3))
+        consumo_semanal_kg = (consumo_diario_g * 7) / 1000.0
+        consumos_semanales_kg.append(round(consumo_semanal_kg, 3))
+    df = pd.DataFrame({
+        'Semana': semanas,
+        'Peso (kg)': pesos_kg,
+        'Consumo semanal de alimento (kg)': consumos_semanales_kg
+    })
+    df['Consumo acumulado de alimento (kg)'] = df['Consumo semanal de alimento (kg)'].cumsum().round(3)
+    return df
+
+# ------------------------------------------------------------
+# Datos de Ponedoras: Lohmann LSL-Classic (semanas)
+# ------------------------------------------------------------
+lohmann_pesos = {
+    1: 75, 2: 125, 3: 187, 4: 257, 5: 338, 6: 432, 7: 530, 8: 627, 9: 722, 10: 814,
+    11: 901, 12: 976, 13: 1041, 14: 1102, 15: 1159, 16: 1215, 17: 1268, 18: 1320, 19: 1371, 20: 1422,
+    21: 1472, 22: 1520, 23: 1562, 24: 1598, 25: 1628, 26: 1648, 27: 1665, 28: 1680, 29: 1690, 30: 1700,
+    31: 1707, 32: 1710, 33: 1713, 34: 1715, 35: 1718, 36: 1720, 37: 1723, 38: 1725, 39: 1728, 40: 1730,
+    41: 1733, 42: 1735, 43: 1738, 44: 1740, 45: 1743, 46: 1745, 47: 1747, 48: 1749, 49: 1751, 50: 1752,
+}
+# Extrapolación hasta semana 100 (aumento de 1-2 g por semana)
+for w in range(51, 101):
+    lohmann_pesos[w] = lohmann_pesos[w-1] + 1
+
+def generar_tabla_ponedora_lohmann(semana_inicio, semana_fin):
+    semanas = list(range(semana_inicio, semana_fin+1))
+    pesos_kg, consumos_semanales_kg = [], []
+    for w in semanas:
+        peso_g = lohmann_pesos.get(w, lohmann_pesos[100])
+        # Consumo: hasta semana 20 usa Hy-Line, luego 110 g/día
+        if w <= 20:
+            consumo_diario_g = hyline_w80_data[w][1]
+        else:
+            consumo_diario_g = 110.0
+        pesos_kg.append(round(peso_g / 1000.0, 3))
+        consumo_semanal_kg = (consumo_diario_g * 7) / 1000.0
+        consumos_semanales_kg.append(round(consumo_semanal_kg, 3))
+    df = pd.DataFrame({
+        'Semana': semanas,
+        'Peso (kg)': pesos_kg,
+        'Consumo semanal de alimento (kg)': consumos_semanales_kg
+    })
+    df['Consumo acumulado de alimento (kg)'] = df['Consumo semanal de alimento (kg)'].cumsum().round(3)
+    return df
+
+# ------------------------------------------------------------
+# Datos de Cerdos (días)
+# ------------------------------------------------------------
 def generar_tabla_cerdo(dia_inicio, dia_fin):
     if dia_inicio == 0:
         dia_inicio = 1
     referencia = {0: (20.0, 0.0), 30: (40.0, 1.5), 60: (70.0, 2.5), 90: (95.0, 3.2), 120: (110.0, 3.5)}
     dias = list(range(dia_inicio, dia_fin+1))
-    pesos = []
-    consumos = []
+    pesos, consumos = [], []
     for d in dias:
         if d <= 0:
             peso = 20.0
@@ -245,14 +213,9 @@ def generar_tabla_cerdo(dia_inicio, dia_fin):
     return df
 
 # ------------------------------------------------------------
-# Cálculo de producto (kg o L) por periodo (día o semana)
+# Cálculo de producto por periodo (día o semana)
 # ------------------------------------------------------------
-def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo_periodo_kg, num_animales, es_semanal=False):
-    """
-    consumo_periodo_kg es el consumo de alimento en ese periodo (día o semana)
-    Para dosis 'feed', se usa el consumo total del periodo.
-    Para dosis 'pv', se usa el peso y número de animales (independiente del consumo).
-    """
+def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo_periodo_kg, num_animales):
     if producto.tipo_producto == "Premezcla":
         consumo_total_ton = (consumo_periodo_kg * num_animales) / 1000.0
         return dosis_elegida * consumo_total_ton
@@ -284,7 +247,7 @@ def main():
         subespecie = st.sidebar.selectbox("Tipo de ave", ["Broilers", "Ponedoras"])
         if subespecie == "Broilers":
             linea = st.sidebar.selectbox("Línea genética", ["Cobb500", "Ross308"])
-        else:  # Ponedoras
+        else:
             linea = st.sidebar.selectbox("Línea genética", ["Hy-Line W-80", "Lohmann LSL-Classic"])
     else:
         subespecie = None
@@ -292,7 +255,7 @@ def main():
 
     num_animales = st.sidebar.number_input("Número de animales", min_value=1, value=1000, step=100)
 
-    # Selección de producto
+    # Producto
     productos_disponibles = []
     for cod, prod in PRODUCTOS.items():
         if especie == "Aves" and prod.dosis_aves is not None:
@@ -334,32 +297,29 @@ def main():
         dosis_elegida = st.number_input(f"Ingrese dosis ({unidad_dosis})", min_value=0.0, value=dosis_min, step=0.1)
     st.info(f"Dosis seleccionada: {dosis_elegida} {unidad_dosis}")
 
-    # Duración del tratamiento (días para Broilers/Cerdos, semanas para Ponedoras)
+    # Duración
     st.sidebar.subheader("Duración del tratamiento")
     if subespecie == "Ponedoras":
         periodo_label = "semana"
-        inicio_default = 1
-        fin_default = 80
-        inicio = st.sidebar.number_input("Semana de inicio", min_value=1, value=inicio_default, step=1)
-        fin = st.sidebar.number_input("Semana de fin", min_value=inicio+1, value=fin_default, step=1)
+        inicio = st.sidebar.number_input("Semana de inicio", min_value=1, value=1, step=1)
+        fin = st.sidebar.number_input("Semana de fin", min_value=inicio+1, value=80, step=1)
         es_semanal = True
     else:
         periodo_label = "día"
-        inicio_default = 1
+        inicio = st.sidebar.number_input("Día de inicio", min_value=0, value=1, step=1)
+        if inicio == 0:
+            st.sidebar.warning("El día de inicio no puede ser 0. Se usará día 1.")
+            inicio = 1
         if especie == "Aves" and subespecie == "Broilers":
             fin_default = 42
         elif especie == "Cerdos":
             fin_default = 90
         else:
             fin_default = 30
-        inicio = st.sidebar.number_input(f"{periodo_label.capitalize()} de inicio (edad en {periodo_label}s)", min_value=0, value=inicio_default, step=1)
-        if inicio == 0:
-            st.sidebar.warning("El día de inicio no puede ser 0. Se usará día 1.")
-            inicio = 1
-        fin = st.sidebar.number_input(f"{periodo_label.capitalize()} de fin", min_value=inicio+1, value=fin_default, step=1)
+        fin = st.sidebar.number_input("Día de fin", min_value=inicio+1, value=fin_default, step=1)
         es_semanal = False
 
-    # Generar tabla base según especie y subespecie
+    # Generar tabla base
     if especie == "Aves":
         if subespecie == "Broilers":
             df_base = generar_tabla_broiler(linea, inicio, fin)
@@ -369,7 +329,7 @@ def main():
         else:  # Ponedoras
             if linea == "Hy-Line W-80":
                 df_base = generar_tabla_ponedora_hyline(inicio, fin)
-            else:  # Lohmann LSL-Classic
+            else:
                 df_base = generar_tabla_ponedora_lohmann(inicio, fin)
             col_periodo = "Semana"
             col_consumo = "Consumo semanal de alimento (kg)"
@@ -380,26 +340,26 @@ def main():
         col_consumo = "Consumo diario de alimento (kg)"
         col_consumo_acum = "Consumo acumulado de alimento (kg)"
 
-    # Asegurar que las columnas tengan los nombres correctos
+    # Renombrar para la interfaz
     df_base.rename(columns={col_periodo: 'Periodo'}, inplace=True)
     df_base.rename(columns={col_consumo: 'Consumo periodo (kg)'}, inplace=True)
     df_base.rename(columns={col_consumo_acum: 'Consumo acumulado (kg)'}, inplace=True)
 
-    # Calcular producto por periodo y precios
+    # Calcular producto por periodo
     df_base['Producto periodo (kg/L)'] = df_base.apply(
         lambda row: calcular_producto_periodo(producto, especie, dosis_elegida,
-                                              row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales, es_semanal), axis=1)
+                                              row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales), axis=1)
     df_base['Precio periodo ($)'] = df_base['Producto periodo (kg/L)'] * producto.precio
     df_base['Producto acumulado (kg/L)'] = df_base['Producto periodo (kg/L)'].cumsum()
     df_base['Precio acumulado ($)'] = df_base['Precio periodo ($)'].cumsum()
 
     # Redondear
-    for col in ['Producto periodo (kg/L)', 'Producto acumulado (kg/L)']:
-        df_base[col] = df_base[col].round(3)
+    df_base['Producto periodo (kg/L)'] = df_base['Producto periodo (kg/L)'].round(3)
     df_base['Precio periodo ($)'] = df_base['Precio periodo ($)'].round(2)
+    df_base['Producto acumulado (kg/L)'] = df_base['Producto acumulado (kg/L)'].round(3)
     df_base['Precio acumulado ($)'] = df_base['Precio acumulado ($)'].round(2)
 
-    # Mostrar tabla editable
+    # Tabla editable
     st.subheader("📊 Tabla de tratamiento")
     st.markdown(f"**Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)'** – el resto se recalcula automáticamente.")
 
@@ -416,12 +376,12 @@ def main():
 
     edited_df = st.data_editor(df_base, column_config=column_config, use_container_width=True, num_rows="fixed")
 
-    # Recalcular si se editaron peso o consumo
+    # Recalcular si hubo cambios
     if not edited_df[['Peso (kg)', 'Consumo periodo (kg)']].equals(df_base[['Peso (kg)', 'Consumo periodo (kg)']]):
         edited_df['Consumo acumulado (kg)'] = edited_df['Consumo periodo (kg)'].cumsum().round(3)
         edited_df['Producto periodo (kg/L)'] = edited_df.apply(
             lambda row: calcular_producto_periodo(producto, especie, dosis_elegida,
-                                                  row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales, es_semanal), axis=1).round(3)
+                                                  row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales), axis=1).round(3)
         edited_df['Precio periodo ($)'] = (edited_df['Producto periodo (kg/L)'] * producto.precio).round(2)
         edited_df['Producto acumulado (kg/L)'] = edited_df['Producto periodo (kg/L)'].cumsum().round(3)
         edited_df['Precio acumulado ($)'] = edited_df['Precio periodo ($)'].cumsum().round(2)
