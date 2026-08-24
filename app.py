@@ -110,7 +110,6 @@ lohmann_pesos = {
 for w in range(51, 101):
     lohmann_pesos[w] = lohmann_pesos[w-1] + 1
 
-# Funciones de Nutrición (se mantienen igual)
 def generar_tabla_broiler(linea, dia_inicio, dia_fin):
     data = cobb500_data if linea == "Cobb500" else ross308_data
     if dia_inicio == 0:
@@ -221,107 +220,91 @@ def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo
                 return mg_necesarios / mg_por_L
 
 # ------------------------------------------------------------
-# MÓDULO DE SANIDAD (PLANES VACUNALES)
+# MÓDULO DE SANIDAD (PLANES VACUNALES) - VERSIÓN EDITABLE
 # ------------------------------------------------------------
-# Datos de vacunas para Ponedoras (según el archivo Excel)
-# Cada fila: Edad, Vacuna, Dosis (siempre 1)
-vacunas_ponedoras = [
-    ("1 DÍA", "ND", 1),
-    ("1 DÍA", "BI", 1),
-    ("1 DÍA", "MAREK", 1),
-    ("1 DÍA", "COCCIDIA/ AMT-NB", 1),
-    ("1 DÍA", "GUMBORO/ IBD", 1),
-    ("1 DÍA", "RECOMBINANTE LT", 1),
-    ("SEM 1", "ND", 1),
-    ("SEM 1", "BI", 1),
-    ("SEM 1", "GUMBORO", 1),
-    ("SEM 4", "ND", 1),
-    ("SEM 4", "BI", 1),
-    ("SEM 4", "SHS", 1),
-    ("SEM 6", "SALMONELLA 9R-VIVA", 1),
-    ("SEM 6", "PASTEURELLA VIVA", 1),
-    ("SEM 6", "VIRUELA", 1),
-    ("SEM 6", "RECOMBINANTE POX-LT", 1),
-    ("SEM 6", "MYCOPLASMA MG", 1),
-    ("SEM 6", "MYCOPLASMA MS", 1),
-    ("SEM 8", "ND", 1),
-    ("SEM 8", "BI", 1),
-    ("SEM 8", "GUMBORO", 1),
-    ("SEM 8", "CORIZA-ALOH", 1),
-    ("SEM 8", "PASTEURELLA INACTIVADA", 1),
-    ("SEM 9", "HEPATITIS", 1),
-    ("SEM 10", "SALMONELLA 9R-VIVAS", 1),
-    ("SEM 12", "CORIZA/ GALLIBACTERIUM-OLEOSA", 1),
-    ("SEM 12", "ND, IB, EDS, TRT", 1),
-    ("SEM 12", "SALMONELLA TYPH, INF, ENT", 1),
-    ("SEM 16", "SALMONELLA TYPH, INF, ENT", 1),
-    ("SEM 25", "ND", 1),
-    ("SEM 25", "BI", 1),
-    ("SEM 33", "ND", 1),
-    ("SEM 33", "BI", 1),
-    ("SEM 40", "ND", 1),
-    ("SEM 40", "BI", 1),
-    ("SEM 48", "ND", 1),
-    ("SEM 48", "BI", 1),
-    ("SEM 56", "ND", 1),
-    ("SEM 56", "BI", 1),
-    ("SEM 64", "ND", 1),
-    ("SEM 64", "BI", 1),
+# Definimos las vacunas con su presentación y precio por defecto (según Excel)
+# Cada vacuna tiene: (Edad, Nombre, Dosis, Presentación por defecto, Precio por ampolla por defecto)
+# Para ponedoras
+vacunas_ponedoras_base = [
+    ("1 DÍA", "ND", 1, 5000, 12.00),
+    ("1 DÍA", "BI", 1, 2500, 6.00),
+    ("1 DÍA", "MAREK", 1, 2000, 14.00),
+    ("1 DÍA", "COCCIDIA/ AMT-NB", 1, 1000, 12.00),
+    ("1 DÍA", "GUMBORO/ IBD", 1, 1000, 7.50),
+    ("1 DÍA", "RECOMBINANTE LT", 1, 1000, 0.00),  # no tiene precio en Excel
+    ("SEM 1", "ND", 1, 5000, 12.00),
+    ("SEM 1", "BI", 1, 2500, 6.00),
+    ("SEM 1", "GUMBORO", 1, 1000, 7.50),
+    ("SEM 4", "ND", 1, 5000, 12.00),
+    ("SEM 4", "BI", 1, 2500, 6.00),
+    ("SEM 4", "SHS", 1, 1000, 20.00),
+    ("SEM 6", "SALMONELLA 9R-VIVA", 1, 1000, 16.00),
+    ("SEM 6", "PASTEURELLA VIVA", 1, 1000, 50.00),
+    ("SEM 6", "VIRUELA", 1, 1000, 12.00),
+    ("SEM 6", "RECOMBINANTE POX-LT", 1, 1000, 28.00),
+    ("SEM 6", "MYCOPLASMA MG", 1, 1000, 60.00),
+    ("SEM 6", "MYCOPLASMA MS", 1, 1000, 85.00),
+    ("SEM 8", "ND", 1, 5000, 12.00),
+    ("SEM 8", "BI", 1, 2500, 6.00),
+    ("SEM 8", "GUMBORO", 1, 1000, 7.50),
+    ("SEM 8", "CORIZA-ALOH", 1, 1000, 26.00),
+    ("SEM 8", "PASTEURELLA INACTIVADA", 1, 1000, 16.00),
+    ("SEM 9", "HEPATITIS", 1, 1000, 16.00),
+    ("SEM 10", "SALMONELLA 9R-VIVAS", 1, 1000, 16.00),
+    ("SEM 12", "CORIZA/ GALLIBACTERIUM-OLEOSA", 1, 1000, 30.00),
+    ("SEM 12", "ND, IB, EDS, TRT", 1, 1000, 50.00),
+    ("SEM 12", "SALMONELLA TYPH, INF, ENT", 1, 1000, 45.00),
+    ("SEM 16", "SALMONELLA TYPH, INF, ENT", 1, 1000, 45.00),
+    ("SEM 25", "ND", 1, 5000, 12.00),
+    ("SEM 25", "BI", 1, 2500, 6.00),
+    ("SEM 33", "ND", 1, 5000, 12.00),
+    ("SEM 33", "BI", 1, 2500, 6.00),
+    ("SEM 40", "ND", 1, 5000, 12.00),
+    ("SEM 40", "BI", 1, 2500, 6.00),
+    ("SEM 48", "ND", 1, 5000, 12.00),
+    ("SEM 48", "BI", 1, 2500, 6.00),
+    ("SEM 56", "ND", 1, 5000, 12.00),
+    ("SEM 56", "BI", 1, 2500, 6.00),
+    ("SEM 64", "ND", 1, 5000, 12.00),
+    ("SEM 64", "BI", 1, 2500, 6.00),
 ]
 
-vacunas_broilers = [
-    ("1 DÍA", "ND", 1),
-    ("1 DÍA", "BI", 1),
-    ("1 DÍA", "MAREK", 1),
-    ("1 DÍA", "COCCIDIA/ AMT-NB", 1),
-    ("1 DÍA", "GUMBORO/ IBD", 1),
-    ("8 DÍAS", "ND", 1),
-    ("8 DÍAS", "BI", 1),
-    ("8 DÍAS", "GUMBORO", 1),
-    ("18 DÍAS", "ND", 1),
-    ("18 DÍAS", "BI", 1),
+vacunas_broilers_base = [
+    ("1 DÍA", "ND", 1, 5000, 12.00),
+    ("1 DÍA", "BI", 1, 2500, 6.00),
+    ("1 DÍA", "MAREK", 1, 2000, 14.00),
+    ("1 DÍA", "COCCIDIA/ AMT-NB", 1, 1000, 10.00),  # en broilers el precio es 10 en Excel
+    ("1 DÍA", "GUMBORO/ IBD", 1, 1000, 7.50),
+    ("8 DÍAS", "ND", 1, 5000, 12.00),
+    ("8 DÍAS", "BI", 1, 2500, 6.00),
+    ("8 DÍAS", "GUMBORO", 1, 1000, 7.50),
+    ("18 DÍAS", "ND", 1, 5000, 12.00),
+    ("18 DÍAS", "BI", 1, 2500, 6.00),
 ]
 
-# Presentaciones de vacunas (número de dosis por ampolla)
-presentaciones = [5000, 2500, 2000, 1000]
+# Función para crear el DataFrame base
+def crear_df_vacunas(tipo_ave):
+    base = vacunas_ponedoras_base if tipo_ave == "Ponedoras" else vacunas_broilers_base
+    df = pd.DataFrame(base, columns=["Edad", "Vacuna", "Dosis", "Presentación (dosis/ampolla)", "Precio por ampolla ($)"])
+    # Aseguramos que los tipos de datos sean correctos
+    df["Presentación (dosis/ampolla)"] = df["Presentación (dosis/ampolla)"].astype(int)
+    df["Precio por ampolla ($)"] = df["Precio por ampolla ($)"].astype(float)
+    return df
 
-# Función para calcular el plan vacunal
-def calcular_plan_vacunal(tipo_ave, num_aves, precios_ampollas):
-    # precios_ampollas es un dict con claves 5000, 2500, 2000, 1000 y sus precios
-    vacunas = vacunas_ponedoras if tipo_ave == "Ponedoras" else vacunas_broilers
-    data = []
-    for edad, vacuna, dosis in vacunas:
-        # Determinar qué presentación se usa para esta vacuna (según el Excel, se usa la que tenga precio)
-        # En el Excel, la lógica es: si la celda G tiene valor, usa esa presentación, si no H, etc.
-        # Simplificamos: asignamos una presentación por defecto basada en la vacuna (similar al Excel)
-        # Usaremos la presentación más común: 1000 dosis para la mayoría, pero algunas usan otras.
-        # Para este ejemplo, asignamos manualmente según la lógica del Excel:
-        # ND -> 5000, BI -> 2500, MAREK -> 2000, COCCIDIA -> 1000, etc.
-        # Esto es solo una aproximación; en la práctica, el usuario puede editar los precios.
-        # Para simplificar, permitimos que el usuario seleccione la presentación en la tabla.
-        # Pero en el Excel, la presentación está fija por vacuna (según la columna donde está el precio).
-        # En la hoja, el costo por dosis se calcula con la primera presentación que tenga precio.
-        # Nosotros podemos hacer lo mismo: buscar la primera presentación con precio >0.
-        # Como el usuario puede editar los precios, usaremos la primera presentación con precio > 0.
-        # Si todas son 0, usamos 1000.
-        precio_dosis = None
-        for pres in presentaciones:
-            if precios_ampollas.get(pres, 0) > 0:
-                precio_dosis = precios_ampollas[pres] / pres
-                break
-        if precio_dosis is None:
-            precio_dosis = 0  # si no hay precio, costo cero
-        costo_por_dosis = precio_dosis
-        costo_por_1000 = costo_por_dosis * 1000
-        data.append({
-            "Edad": edad,
-            "Vacuna": vacuna,
-            "Dosis": dosis,
-            "Costo por dosis ($)": round(costo_por_dosis, 4),
-            "Costo x 1000 aves ($)": round(costo_por_1000, 2),
-            "Costo total ($)": round(costo_por_1000 * (num_aves / 1000), 2)
-        })
-    return pd.DataFrame(data)
+# Función para actualizar los costos a partir del DataFrame editado
+def actualizar_costos(df, num_aves):
+    df = df.copy()
+    # Calcular costo por dosis
+    df["Costo por dosis ($)"] = df["Precio por ampolla ($)"] / df["Presentación (dosis/ampolla)"]
+    # Costo por 1000 aves
+    df["Costo x 1000 aves ($)"] = df["Costo por dosis ($)"] * 1000
+    # Costo total
+    df["Costo total ($)"] = df["Costo x 1000 aves ($)"] * (num_aves / 1000)
+    # Redondear para mejor visualización
+    df["Costo por dosis ($)"] = df["Costo por dosis ($)"].round(4)
+    df["Costo x 1000 aves ($)"] = df["Costo x 1000 aves ($)"].round(2)
+    df["Costo total ($)"] = df["Costo total ($)"].round(2)
+    return df
 
 # ------------------------------------------------------------
 # INTERFAZ PRINCIPAL
@@ -346,7 +329,6 @@ def main():
         st.header("Nutrición y Antibióticos")
         st.markdown("Cálculo de dosis de premezclas, polvos solubles y soluciones orales.")
 
-        # Parámetros generales
         st.sidebar.header("Parámetros generales")
         especie = st.sidebar.selectbox("Especie", ["Aves", "Cerdos"])
 
@@ -362,7 +344,6 @@ def main():
 
         num_animales = st.sidebar.number_input("Número de animales", min_value=1, value=1000, step=100)
 
-        # Filtro de productos según especie y subespecie
         productos_disponibles = []
         for cod, prod in PRODUCTOS.items():
             if especie == "Aves" and prod.dosis_aves is not None:
@@ -391,7 +372,6 @@ def main():
             precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_editable")
             producto.precio = precio_actual
 
-        # Dosis
         if especie == "Aves":
             dosis_info = producto.dosis_aves
         else:
@@ -409,7 +389,6 @@ def main():
             dosis_elegida = st.number_input(f"Ingrese dosis ({unidad_dosis})", min_value=0.0, value=dosis_min, step=0.1)
         st.info(f"Dosis seleccionada: {dosis_elegida} {unidad_dosis}")
 
-        # Duración
         st.sidebar.subheader("Duración del tratamiento")
         if subespecie == "Ponedoras":
             periodo_label = "semana"
@@ -429,7 +408,6 @@ def main():
                 fin_default = 30
             fin = st.sidebar.number_input("Día de fin", min_value=inicio+1, value=fin_default, step=1)
 
-        # Generar tabla base
         if especie == "Aves":
             if subespecie == "Broilers":
                 df_base = generar_tabla_broiler(linea, inicio, fin)
@@ -454,7 +432,6 @@ def main():
         df_base.rename(columns={col_consumo: 'Consumo periodo (kg)'}, inplace=True)
         df_base.rename(columns={col_consumo_acum: 'Consumo acumulado (kg)'}, inplace=True)
 
-        # Calcular producto por periodo
         df_base['Producto periodo (kg/L)'] = df_base.apply(
             lambda row: calcular_producto_periodo(producto, especie, dosis_elegida,
                                                   row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales), axis=1)
@@ -467,7 +444,6 @@ def main():
         df_base['Producto acumulado (kg/L)'] = df_base['Producto acumulado (kg/L)'].round(3)
         df_base['Precio acumulado ($)'] = df_base['Precio acumulado ($)'].round(2)
 
-        # Tabla editable
         st.subheader("📊 Tabla de tratamiento")
         st.markdown(f"**Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)'** – el resto se recalcula automáticamente.")
 
@@ -520,7 +496,6 @@ def main():
         if principio_activo_total != producto_total_completo:
             st.caption(f"* El principio activo requerido es {principio_activo_total:.3f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
 
-        # Descargar CSV con metadatos y tabla
         resumen = {
             "Parámetro": [
                 "Especie",
@@ -575,47 +550,68 @@ def main():
         # MÓDULO DE SANIDAD (PLANES VACUNALES)
         # ------------------------------------------------------------
         st.header("Sanidad - Planes Vacunales")
-        st.markdown("Calcula el costo de un plan vacunal para aves de postura o broilers.")
+        st.markdown("Edita la presentación y el precio por ampolla de cada vacuna. Los costos se actualizan automáticamente.")
 
-        # Selección de tipo de ave
         tipo_ave = st.selectbox("Tipo de ave", ["Ponedoras", "Broilers"])
-
-        # Número de aves
         num_aves = st.number_input("Número de aves", min_value=1, value=1000, step=100)
 
-        # Precios de ampollas por presentación
-        st.subheader("Precios de ampollas por presentación (dosis)")
-        col_precios = st.columns(len(presentaciones))
-        precios_ampollas = {}
-        for i, pres in enumerate(presentaciones):
-            with col_precios[i]:
-                # Valores por defecto según el Excel
-                if pres == 5000:
-                    default = 12.0
-                elif pres == 2500:
-                    default = 6.0
-                elif pres == 2000:
-                    default = 14.0
-                else:  # 1000
-                    default = 7.5  # valor típico para algunas vacunas, pero puede variar
-                # Para broilers, los precios pueden ser diferentes, pero usamos los mismos por simplicidad
-                precio = st.number_input(f"{pres} dosis ($)", min_value=0.0, value=default, step=0.1, key=f"pres_{pres}")
-                precios_ampollas[pres] = precio
+        # Crear DataFrame base con las columnas editables
+        df_base = crear_df_vacunas(tipo_ave)
 
-        # Calcular el plan vacunal
-        df_vacunas = calcular_plan_vacunal(tipo_ave, num_aves, precios_ampollas)
+        # Mostrar data editor para que el usuario modifique presentación y precio
+        st.subheader("Tabla de vacunas (editable)")
+        st.markdown("Puedes cambiar la **Presentación (dosis/ampolla)** y el **Precio por ampolla ($)** para cada vacuna.")
 
-        # Mostrar tabla
-        st.subheader("Plan vacunal")
-        st.dataframe(df_vacunas, use_container_width=True)
+        # Configurar columnas para el editor
+        column_config = {
+            "Edad": st.column_config.TextColumn("Edad", disabled=True),
+            "Vacuna": st.column_config.TextColumn("Vacuna", disabled=True),
+            "Dosis": st.column_config.NumberColumn("Dosis", disabled=True),
+            "Presentación (dosis/ampolla)": st.column_config.SelectboxColumn(
+                "Presentación (dosis/ampolla)",
+                options=[5000, 2500, 2000, 1000],
+                required=True
+            ),
+            "Precio por ampolla ($)": st.column_config.NumberColumn(
+                "Precio por ampolla ($)",
+                min_value=0.0,
+                step=0.01,
+                format="%.2f"
+            ),
+        }
 
-        # Mostrar total
-        total_costo = df_vacunas["Costo total ($)"].sum()
+        # Mostrar el editor
+        edited_df = st.data_editor(
+            df_base,
+            column_config=column_config,
+            use_container_width=True,
+            num_rows="fixed",
+            key="vacunas_editor"
+        )
+
+        # Calcular costos actualizados
+        df_costos = actualizar_costos(edited_df, num_aves)
+
+        # Mostrar tabla con costos
+        st.subheader("Costos calculados")
+        # Seleccionar columnas a mostrar (incluir las editadas y las calculadas)
+        columnas_mostrar = ["Edad", "Vacuna", "Dosis", "Presentación (dosis/ampolla)", 
+                            "Precio por ampolla ($)", "Costo por dosis ($)", 
+                            "Costo x 1000 aves ($)", "Costo total ($)"]
+        st.dataframe(df_costos[columnas_mostrar], use_container_width=True)
+
+        # Total
+        total_costo = df_costos["Costo total ($)"].sum()
         st.metric("Costo total del plan vacunal", f"${total_costo:.2f}")
 
-        # Descargar CSV del plan vacunal
-        csv_vacunas = df_vacunas.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Descargar plan vacunal (CSV)", data=csv_vacunas, file_name=f"plan_vacunal_{tipo_ave.lower()}.csv", mime="text/csv")
+        # Descargar CSV del plan vacunal (incluyendo costos)
+        csv_vacunas = df_costos.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            "📥 Descargar plan vacunal con costos (CSV)",
+            data=csv_vacunas,
+            file_name=f"plan_vacunal_{tipo_ave.lower()}_con_costos.csv",
+            mime="text/csv"
+        )
 
 if __name__ == "__main__":
     main()
