@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
+import io
 
 st.set_page_config(page_title="Calculador de Dosis Veterinarias", layout="wide", page_icon="🐔")
 
@@ -14,8 +15,8 @@ class Producto:
         self.codigo = codigo
         self.nombre = nombre
         self.unidad = unidad
-        self.presentacion_kg = presentacion_kg  # Tamaño del envase (kg o L)
-        self.precio = precio  # Precio por unidad (kg o L)
+        self.presentacion_kg = presentacion_kg
+        self.precio = precio
         self.tipo_producto = tipo_producto
         self.concentracion = concentracion
         self.dosis_aves = dosis_aves
@@ -418,7 +419,7 @@ def main():
     with col_r1:
         st.metric("Alimento total", f"{total_alimento_ton:.2f} toneladas")
     with col_r2:
-        st.metric("Principio activo total necesario", f"{principio_activo_total:.2f} {producto.unidad}")
+        st.metric("Principio activo total necesario", f"{principio_activo_total:.3f} {producto.unidad}")
     with col_r3:
         st.metric("Precio estimado (redondeado)", f"${precio_redondeado:.2f}")
 
@@ -429,11 +430,67 @@ def main():
     )
 
     if principio_activo_total != producto_total_completo:
-        st.caption(f"* El principio activo requerido es {principio_activo_total:.2f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
+        st.caption(f"* El principio activo requerido es {principio_activo_total:.3f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
 
-    # Descargar CSV
-    csv = edited_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Descargar tabla (CSV)", data=csv, file_name="tabla_tratamiento.csv", mime="text/csv")
+    # --- Descargar CSV con metadatos y tabla ---
+    # Crear un DataFrame de resumen con los parámetros y resultados
+    resumen = {
+        "Parámetro": [
+            "Especie",
+            "Tipo de ave" if especie == "Aves" else "Cerdos",
+            "Línea genética" if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
+            "Producto",
+            "Código",
+            "Presentación",
+            "Precio por unidad",
+            "Dosis seleccionada",
+            "Duración (inicio)",
+            "Duración (fin)",
+            "Número de animales",
+            "Alimento total (ton)",
+            "Principio activo total necesario",
+            "Producto total en unidades completas",
+            "Número de sacos/envases",
+            "Precio estimado"
+        ],
+        "Valor": [
+            especie,
+            subespecie if especie == "Aves" else "N/A",
+            linea if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
+            producto.nombre,
+            producto.codigo,
+            f"{producto.presentacion_kg} {producto.unidad}",
+            f"${producto.precio:.2f}",
+            f"{dosis_elegida} {unidad_dosis}",
+            inicio,
+            fin,
+            num_animales,
+            f"{total_alimento_ton:.2f} ton",
+            f"{principio_activo_total:.3f} {producto.unidad}",
+            f"{producto_total_completo:.3f} {producto.unidad}",
+            f"{envases_necesarios} {termino_unidad.lower()}",
+            f"${precio_redondeado:.2f}"
+        ]
+    }
+    df_resumen = pd.DataFrame(resumen)
+    # Añadir una fila en blanco para separar
+    df_blank = pd.DataFrame([["", ""]], columns=["Parámetro", "Valor"])
+    df_resumen = pd.concat([df_resumen, df_blank], ignore_index=True)
+
+    # Crear el CSV completo: resumen + tabla
+    # Para la tabla, reutilizamos edited_df que ya tiene los datos.
+    # Pero queremos que las columnas sean las que se muestran en la interfaz.
+    # Usamos una copia para no modificar el original.
+    df_tabla = edited_df.copy()
+    # Agregar una fila de encabezado para indicar que comienza la tabla
+    df_header_tabla = pd.DataFrame([["--- TABLA DE TRATAMIENTO ---", ""] + [""]*(len(df_tabla.columns)-2)], columns=df_tabla.columns)
+    df_tabla = pd.concat([df_header_tabla, df_tabla], ignore_index=True)
+
+    # Combinar resumen y tabla
+    df_completo = pd.concat([df_resumen, df_tabla], ignore_index=True)
+
+    csv = df_completo.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Descargar tabla completa (CSV)", data=csv, file_name="tabla_tratamiento_completa.csv", mime="text/csv")
 
 if __name__ == "__main__":
     main()
