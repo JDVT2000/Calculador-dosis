@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
-import io
 
 st.set_page_config(page_title="PROMUNE - Gestión Veterinaria", layout="wide", page_icon="🐔")
 
@@ -53,8 +52,9 @@ PRODUCTOS = {
 }
 
 # ------------------------------------------------------------
-# DATOS DE CRECIMIENTO (Broilers, Ponedoras, Cerdos)
+# DATOS DE CRECIMIENTO
 # ------------------------------------------------------------
+# Broilers (días)
 cobb500_data = {
     0: (42, 0), 1: (55, 0), 2: (71, 0), 3: (90, 0), 4: (112, 0), 5: (138, 0), 6: (168, 0),
     7: (202, 180), 8: (240, 40), 9: (283, 44), 10: (330, 50), 11: (382, 57), 12: (440, 64),
@@ -83,7 +83,7 @@ ross308_data = {
     54: (4142, 233), 55: (4230, 233), 56: (4318, 234)
 }
 
-# Ponedoras: datos semanales (peso en g, consumo diario en g/día)
+# Ponedoras (semanas) - peso (g) y consumo diario (g/día)
 hyline_w80_data = {
     1: (71.0, 14.5), 2: (131.0, 19.0), 3: (196.5, 22.5), 4: (268.0, 26.5), 5: (346.0, 31.5),
     6: (432.0, 36.0), 7: (525.0, 40.5), 8: (621.5, 44.0), 9: (718.0, 47.0), 10: (811.5, 50.0),
@@ -110,7 +110,7 @@ for w in range(51, 101):
     lohmann_pesos_semana[w] = lohmann_pesos_semana[w-1] + 1
 
 # ------------------------------------------------------------
-# FUNCIONES PARA GENERAR TABLAS POR DÍA
+# FUNCIONES PARA GENERAR TABLAS (DIARIAS para Broilers y Cerdos, SEMANALES para Ponedoras)
 # ------------------------------------------------------------
 def generar_tabla_broiler(linea, dia_inicio, dia_fin):
     data = cobb500_data if linea == "Cobb500" else ross308_data
@@ -137,17 +137,16 @@ def generar_tabla_broiler(linea, dia_inicio, dia_fin):
                         break
         pesos_kg.append(round(peso_g/1000.0, 3))
         consumos_diarios_kg.append(round(consumo_g/1000.0, 3))
-    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos_kg, 'Consumo diario de alimento (kg)': consumos_diarios_kg})
-    df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
+    df = pd.DataFrame({'Periodo': dias, 'Peso (kg)': pesos_kg, 'Consumo periodo (kg)': consumos_diarios_kg})
+    df['Consumo acumulado (kg)'] = df['Consumo periodo (kg)'].cumsum().round(3)
     return df
 
-def generar_tabla_ponedora(linea, dia_inicio, dia_fin):
-    """Genera tabla diaria para ponedoras a partir de datos semanales."""
-    # Seleccionar la línea
+def generar_tabla_ponedora(linea, semana_inicio, semana_fin, dias_tratamiento):
+    # Seleccionar datos de la línea
     if linea == "Hy-Line W-80":
         datos_semana = hyline_w80_data
-    else:  # Lohmann
-        # Construir datos semanales para Lohmann (consumo: igual a Hy-Line hasta semana 20, luego 110 g/día)
+    else:
+        # Construir datos para Lohmann (consumo igual a Hy-Line hasta semana 20, luego 110 g/día)
         datos_semana = {}
         for semana in range(1, 101):
             peso_g = lohmann_pesos_semana[semana]
@@ -157,29 +156,23 @@ def generar_tabla_ponedora(linea, dia_inicio, dia_fin):
                 consumo_diario_g = 110.0
             datos_semana[semana] = (peso_g, consumo_diario_g)
     
-    # Convertir a diario
-    dias = list(range(dia_inicio, dia_fin+1))
-    pesos_kg, consumos_diarios_kg = [], []
-    for d in dias:
-        # Determinar a qué semana pertenece el día (1 semana = 7 días)
-        # Suponemos que la semana 1 va del día 1 al 7, semana 2 del 8 al 14, etc.
-        semana = math.ceil(d / 7)
-        if semana < 1:
-            semana = 1
-        if semana > 100:
-            semana = 100
-        # Obtener datos de la semana
-        if semana in datos_semana:
-            peso_g, cons_diario_g = datos_semana[semana]
-        else:
-            # extrapolar
-            peso_g = datos_semana[100][0]
-            cons_diario_g = datos_semana[100][1]
-        # Interpolación dentro de la semana (opcional) - tomamos el valor de la semana tal cual
+    semanas = list(range(semana_inicio, semana_fin+1))
+    pesos_kg = []
+    consumos_semana_kg = []
+    for w in semanas:
+        peso_g, consumo_diario_g = datos_semana.get(w, (datos_semana[100][0], datos_semana[100][1]))
         pesos_kg.append(round(peso_g / 1000.0, 3))
-        consumos_diarios_kg.append(round(cons_diario_g / 1000.0, 3))
-    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos_kg, 'Consumo diario de alimento (kg)': consumos_diarios_kg})
-    df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
+        # Consumo de la semana (días de tratamiento × consumo diario)
+        consumo_semana_kg = round((consumo_diario_g * dias_tratamiento) / 1000.0, 3)
+        consumos_semana_kg.append(consumo_semana_kg)
+    df = pd.DataFrame({
+        'Periodo': semanas,
+        'Peso (kg)': pesos_kg,
+        'Consumo periodo (kg)': consumos_semana_kg
+    })
+    df['Consumo acumulado (kg)'] = df['Consumo periodo (kg)'].cumsum().round(3)
+    # Añadir columna de días de tratamiento (para referencia)
+    df['Días de tratamiento'] = dias_tratamiento
     return df
 
 def generar_tabla_cerdo(dia_inicio, dia_fin):
@@ -204,21 +197,21 @@ def generar_tabla_cerdo(dia_inicio, dia_fin):
                     break
         pesos.append(round(peso, 3))
         consumos.append(round(cons, 3))
-    df = pd.DataFrame({'Día': dias, 'Peso (kg)': pesos, 'Consumo diario de alimento (kg)': consumos})
-    df['Consumo acumulado de alimento (kg)'] = df['Consumo diario de alimento (kg)'].cumsum().round(3)
+    df = pd.DataFrame({'Periodo': dias, 'Peso (kg)': pesos, 'Consumo periodo (kg)': consumos})
+    df['Consumo acumulado (kg)'] = df['Consumo periodo (kg)'].cumsum().round(3)
     return df
 
 # ------------------------------------------------------------
-# CÁLCULO DE PRODUCTO POR PERIODO (DÍA)
+# CÁLCULO DE PRODUCTO POR PERIODO
 # ------------------------------------------------------------
-def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo_diario_kg, num_animales):
+def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo_periodo_kg, num_animales):
     if producto.tipo_producto == "Premezcla":
-        consumo_total_ton = (consumo_diario_kg * num_animales) / 1000.0
+        consumo_total_ton = (consumo_periodo_kg * num_animales) / 1000.0
         return dosis_elegida * consumo_total_ton
     else:
         tipo_dosis, _, _ = (producto.dosis_aves if especie == "Aves" else producto.dosis_cerdos)
         if tipo_dosis == "feed":
-            consumo_total_ton = (consumo_diario_kg * num_animales) / 1000.0
+            consumo_total_ton = (consumo_periodo_kg * num_animales) / 1000.0
             return dosis_elegida * consumo_total_ton
         else:  # pv
             mg_necesarios = dosis_elegida * peso_kg * num_animales
@@ -230,7 +223,7 @@ def calcular_producto_periodo(producto, especie, dosis_elegida, peso_kg, consumo
                 return mg_necesarios / mg_por_L
 
 # ------------------------------------------------------------
-# MÓDULO DE SANIDAD (PLANES VACUNALES) - SIN CAMBIOS
+# MÓDULO DE VACUNAS (Biológicos) - SIN CAMBIOS
 # ------------------------------------------------------------
 vacunas_ponedoras_base = [
     ("1 DÍA", "ND", 1, 5000, 12.00),
@@ -311,10 +304,8 @@ def actualizar_costos(df, num_aves):
 # ------------------------------------------------------------
 def main():
     st.title("💊 PROMUNE - Gestión Veterinaria")
-
     st.sidebar.image("logo-promune.png", use_container_width=True)
 
-    # Selector de módulo: Nutrición, Sanidad, Biológicos
     modulo = st.sidebar.radio(
         "Selecciona el módulo:",
         ["Nutrición", "Sanidad", "Biológicos"],
@@ -322,9 +313,6 @@ def main():
     )
 
     if modulo == "Nutrición":
-        # ------------------------------------------------------------
-        # MÓDULO NUTRICIÓN: Solo productos tipo "Premezcla"
-        # ------------------------------------------------------------
         st.header("Nutrición - Premezclas")
         st.markdown("Cálculo de dosis de premezclas vitamínico-minerales.")
 
@@ -343,7 +331,7 @@ def main():
 
         num_animales = st.sidebar.number_input("Número de animales", min_value=1, value=1000, step=100)
 
-        # Filtrar solo productos tipo "Premezcla"
+        # Filtrar solo Premezclas
         productos_disponibles = []
         for cod, prod in PRODUCTOS.items():
             if prod.tipo_producto != "Premezcla":
@@ -371,7 +359,7 @@ def main():
             st.write(f"**Tipo:** {producto.tipo_producto}")
         with col2:
             st.write(f"**Presentación:** {producto.presentacion_kg} {producto.unidad}")
-            precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_editable_nutri")
+            precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_nutri")
             producto.precio = precio_actual
 
         if especie == "Aves":
@@ -391,35 +379,34 @@ def main():
             dosis_elegida = st.number_input(f"Ingrese dosis ({unidad_dosis})", min_value=0.0, value=dosis_min, step=0.1)
         st.info(f"Dosis seleccionada: {dosis_elegida} {unidad_dosis}")
 
-        # Duración en días (para todos)
-        st.sidebar.subheader("Duración del tratamiento (días)")
-        dia_inicio = st.sidebar.number_input("Día de inicio", min_value=1, value=1, step=1)
-        if especie == "Aves" and subespecie == "Broilers":
-            dia_fin_default = 42
-        elif especie == "Aves" and subespecie == "Ponedoras":
-            dia_fin_default = 30
-        elif especie == "Cerdos":
-            dia_fin_default = 90
+        # Duración del tratamiento
+        st.sidebar.subheader("Duración del tratamiento")
+        if subespecie == "Ponedoras":
+            semana_inicio = st.sidebar.number_input("Semana de inicio", min_value=1, value=1, step=1)
+            semana_fin = st.sidebar.number_input("Semana de fin", min_value=semana_inicio+1, value=8, step=1)
+            dias_tratamiento = st.sidebar.number_input("Días de tratamiento por semana", min_value=1, max_value=7, value=7, step=1)
+            periodo_label = "Semana"
         else:
-            dia_fin_default = 30
-        dia_fin = st.sidebar.number_input("Día de fin", min_value=dia_inicio+1, value=dia_fin_default, step=1)
+            dia_inicio = st.sidebar.number_input("Día de inicio", min_value=1, value=1, step=1)
+            if especie == "Aves" and subespecie == "Broilers":
+                fin_default = 42
+            elif especie == "Cerdos":
+                fin_default = 90
+            else:
+                fin_default = 30
+            dia_fin = st.sidebar.number_input("Día de fin", min_value=dia_inicio+1, value=fin_default, step=1)
+            periodo_label = "Día"
 
-        # Generar tabla según especie
+        # Generar tabla base
         if especie == "Aves":
             if subespecie == "Broilers":
                 df_base = generar_tabla_broiler(linea, dia_inicio, dia_fin)
             else:  # Ponedoras
-                df_base = generar_tabla_ponedora(linea, dia_inicio, dia_fin)
+                df_base = generar_tabla_ponedora(linea, semana_inicio, semana_fin, dias_tratamiento)
         else:
             df_base = generar_tabla_cerdo(dia_inicio, dia_fin)
 
-        # Renombrar columnas para interfaz
-        df_base.rename(columns={'Consumo diario de alimento (kg)': 'Consumo periodo (kg)',
-                                'Consumo acumulado de alimento (kg)': 'Consumo acumulado (kg)'}, inplace=True)
-        df_base['Periodo'] = df_base['Día']
-        df_base = df_base[['Periodo', 'Peso (kg)', 'Consumo periodo (kg)', 'Consumo acumulado (kg)']]
-
-        # Calcular producto por día
+        # Calcular producto y precios
         df_base['Producto periodo (kg/L)'] = df_base.apply(
             lambda row: calcular_producto_periodo(producto, especie, dosis_elegida,
                                                   row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales), axis=1)
@@ -427,28 +414,33 @@ def main():
         df_base['Producto acumulado (kg/L)'] = df_base['Producto periodo (kg/L)'].cumsum()
         df_base['Precio acumulado ($)'] = df_base['Precio periodo ($)'].cumsum()
 
+        # Redondear
         df_base['Producto periodo (kg/L)'] = df_base['Producto periodo (kg/L)'].round(3)
         df_base['Precio periodo ($)'] = df_base['Precio periodo ($)'].round(2)
         df_base['Producto acumulado (kg/L)'] = df_base['Producto acumulado (kg/L)'].round(3)
         df_base['Precio acumulado ($)'] = df_base['Precio acumulado ($)'].round(2)
 
         # Tabla editable
-        st.subheader("📊 Tabla de tratamiento diario")
-        st.markdown("Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)' – el resto se recalcula automáticamente.")
+        st.subheader("📊 Tabla de tratamiento")
+        st.markdown(f"Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)' – el resto se recalcula automáticamente.")
 
         column_config = {
-            "Periodo": st.column_config.NumberColumn("Día", disabled=True),
+            "Periodo": st.column_config.NumberColumn(periodo_label, disabled=True),
             "Peso (kg)": st.column_config.NumberColumn("Peso (kg)", min_value=0.0, step=0.001, format="%.3f"),
-            "Consumo periodo (kg)": st.column_config.NumberColumn("Consumo diario (kg)", min_value=0.0, step=0.001, format="%.3f"),
+            "Consumo periodo (kg)": st.column_config.NumberColumn(f"Consumo {periodo_label.lower()} (kg)", min_value=0.0, step=0.001, format="%.3f"),
             "Consumo acumulado (kg)": st.column_config.NumberColumn("Consumo acumulado (kg)", disabled=True, format="%.3f"),
-            "Producto periodo (kg/L)": st.column_config.NumberColumn(f"Producto diario ({producto.unidad})", disabled=True, format="%.3f"),
-            "Precio periodo ($)": st.column_config.NumberColumn("Precio diario ($)", disabled=True, format="%.2f"),
+            "Producto periodo (kg/L)": st.column_config.NumberColumn(f"Producto {periodo_label.lower()} ({producto.unidad})", disabled=True, format="%.3f"),
+            "Precio periodo ($)": st.column_config.NumberColumn(f"Precio {periodo_label.lower()} ($)", disabled=True, format="%.2f"),
             "Producto acumulado (kg/L)": st.column_config.NumberColumn(f"Producto acumulado ({producto.unidad})", disabled=True, format="%.3f"),
             "Precio acumulado ($)": st.column_config.NumberColumn("Precio acumulado ($)", disabled=True, format="%.2f"),
         }
+        # Si es ponedoras, añadir columna de días de tratamiento (no editable)
+        if subespecie == "Ponedoras":
+            column_config["Días de tratamiento"] = st.column_config.NumberColumn("Días de tratamiento", disabled=True)
 
         edited_df = st.data_editor(df_base, column_config=column_config, use_container_width=True, num_rows="fixed")
 
+        # Recalcular si hubo cambios en peso o consumo
         if not edited_df[['Peso (kg)', 'Consumo periodo (kg)']].equals(df_base[['Peso (kg)', 'Consumo periodo (kg)']]):
             edited_df['Consumo acumulado (kg)'] = edited_df['Consumo periodo (kg)'].cumsum().round(3)
             edited_df['Producto periodo (kg/L)'] = edited_df.apply(
@@ -459,6 +451,7 @@ def main():
             edited_df['Precio acumulado ($)'] = edited_df['Precio periodo ($)'].cumsum().round(2)
             st.rerun()
 
+        # Totales finales
         total_alimento_kg = (edited_df['Consumo periodo (kg)'] * num_animales).sum()
         total_alimento_ton = total_alimento_kg / 1000.0
         principio_activo_total = edited_df['Producto acumulado (kg/L)'].iloc[-1]
@@ -485,13 +478,16 @@ def main():
         if principio_activo_total != producto_total_completo:
             st.caption(f"* El principio activo requerido es {principio_activo_total:.3f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
 
-        # Descargar CSV
+        # Descargar CSV con metadatos
         resumen = {
             "Parámetro": [
                 "Especie", "Tipo de ave" if especie == "Aves" else "Cerdos",
                 "Línea genética" if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
                 "Producto", "Código", "Presentación", "Precio por unidad",
-                "Dosis seleccionada", "Duración (inicio)", "Duración (fin)",
+                "Dosis seleccionada",
+                "Duración (inicio)" + (" semana" if subespecie == "Ponedoras" else " día"),
+                "Duración (fin)" + (" semana" if subespecie == "Ponedoras" else " día"),
+                "Días de tratamiento por semana" if subespecie == "Ponedoras" else "N/A",
                 "Número de animales", "Alimento total (ton)", "Principio activo total necesario",
                 "Producto total en unidades completas", "Número de sacos", "Precio estimado"
             ],
@@ -500,7 +496,10 @@ def main():
                 linea if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
                 producto.nombre, producto.codigo, f"{producto.presentacion_kg} {producto.unidad}",
                 f"${producto.precio:.2f}", f"{dosis_elegida} {unidad_dosis}",
-                dia_inicio, dia_fin, num_animales,
+                semana_inicio if subespecie == "Ponedoras" else dia_inicio,
+                semana_fin if subespecie == "Ponedoras" else dia_fin,
+                dias_tratamiento if subespecie == "Ponedoras" else "N/A",
+                num_animales,
                 f"{total_alimento_ton:.2f} ton", f"{principio_activo_total:.3f} {producto.unidad}",
                 f"{producto_total_completo:.3f} {producto.unidad}",
                 f"{envases_necesarios} {termino_unidad.lower()}",
@@ -520,7 +519,8 @@ def main():
 
     elif modulo == "Sanidad":
         # ------------------------------------------------------------
-        # MÓDULO SANIDAD: Productos tipo "Antibiótico Oral" y "Polvo Soluble"
+        # MÓDULO SANIDAD (Antibióticos Orales y Polvos Solubles)
+        # Es idéntico al de Nutrición pero con filtro de productos diferente
         # ------------------------------------------------------------
         st.header("Sanidad - Antibióticos Orales y Polvos Solubles")
         st.markdown("Cálculo de dosis de productos de aplicación en agua o alimento.")
@@ -564,7 +564,7 @@ def main():
             st.write(f"**Tipo:** {producto.tipo_producto}")
         with col2:
             st.write(f"**Presentación:** {producto.presentacion_kg} {producto.unidad}")
-            precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_editable_sanidad")
+            precio_actual = st.number_input(f"PVP por {producto.unidad} ($)", min_value=0.0, value=producto.precio, step=0.01, key="precio_sanidad")
             producto.precio = precio_actual
 
         if especie == "Aves":
@@ -584,33 +584,34 @@ def main():
             dosis_elegida = st.number_input(f"Ingrese dosis ({unidad_dosis})", min_value=0.0, value=dosis_min, step=0.1)
         st.info(f"Dosis seleccionada: {dosis_elegida} {unidad_dosis}")
 
-        # Duración en días (para todos)
-        st.sidebar.subheader("Duración del tratamiento (días)")
-        dia_inicio = st.sidebar.number_input("Día de inicio", min_value=1, value=1, step=1)
-        if especie == "Aves" and subespecie == "Broilers":
-            dia_fin_default = 42
-        elif especie == "Aves" and subespecie == "Ponedoras":
-            dia_fin_default = 30
-        elif especie == "Cerdos":
-            dia_fin_default = 90
+        # Duración del tratamiento
+        st.sidebar.subheader("Duración del tratamiento")
+        if subespecie == "Ponedoras":
+            semana_inicio = st.sidebar.number_input("Semana de inicio", min_value=1, value=1, step=1)
+            semana_fin = st.sidebar.number_input("Semana de fin", min_value=semana_inicio+1, value=8, step=1)
+            dias_tratamiento = st.sidebar.number_input("Días de tratamiento por semana", min_value=1, max_value=7, value=7, step=1)
+            periodo_label = "Semana"
         else:
-            dia_fin_default = 30
-        dia_fin = st.sidebar.number_input("Día de fin", min_value=dia_inicio+1, value=dia_fin_default, step=1)
+            dia_inicio = st.sidebar.number_input("Día de inicio", min_value=1, value=1, step=1)
+            if especie == "Aves" and subespecie == "Broilers":
+                fin_default = 42
+            elif especie == "Cerdos":
+                fin_default = 90
+            else:
+                fin_default = 30
+            dia_fin = st.sidebar.number_input("Día de fin", min_value=dia_inicio+1, value=fin_default, step=1)
+            periodo_label = "Día"
 
-        # Generar tabla según especie
+        # Generar tabla base
         if especie == "Aves":
             if subespecie == "Broilers":
                 df_base = generar_tabla_broiler(linea, dia_inicio, dia_fin)
             else:  # Ponedoras
-                df_base = generar_tabla_ponedora(linea, dia_inicio, dia_fin)
+                df_base = generar_tabla_ponedora(linea, semana_inicio, semana_fin, dias_tratamiento)
         else:
             df_base = generar_tabla_cerdo(dia_inicio, dia_fin)
 
-        df_base.rename(columns={'Consumo diario de alimento (kg)': 'Consumo periodo (kg)',
-                                'Consumo acumulado de alimento (kg)': 'Consumo acumulado (kg)'}, inplace=True)
-        df_base['Periodo'] = df_base['Día']
-        df_base = df_base[['Periodo', 'Peso (kg)', 'Consumo periodo (kg)', 'Consumo acumulado (kg)']]
-
+        # Calcular producto y precios
         df_base['Producto periodo (kg/L)'] = df_base.apply(
             lambda row: calcular_producto_periodo(producto, especie, dosis_elegida,
                                                   row['Peso (kg)'], row['Consumo periodo (kg)'], num_animales), axis=1)
@@ -623,19 +624,21 @@ def main():
         df_base['Producto acumulado (kg/L)'] = df_base['Producto acumulado (kg/L)'].round(3)
         df_base['Precio acumulado ($)'] = df_base['Precio acumulado ($)'].round(2)
 
-        st.subheader("📊 Tabla de tratamiento diario")
-        st.markdown("Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)' – el resto se recalcula automáticamente.")
+        st.subheader("📊 Tabla de tratamiento")
+        st.markdown(f"Edita las celdas de 'Peso (kg)' y 'Consumo periodo (kg)' – el resto se recalcula automáticamente.")
 
         column_config = {
-            "Periodo": st.column_config.NumberColumn("Día", disabled=True),
+            "Periodo": st.column_config.NumberColumn(periodo_label, disabled=True),
             "Peso (kg)": st.column_config.NumberColumn("Peso (kg)", min_value=0.0, step=0.001, format="%.3f"),
-            "Consumo periodo (kg)": st.column_config.NumberColumn("Consumo diario (kg)", min_value=0.0, step=0.001, format="%.3f"),
+            "Consumo periodo (kg)": st.column_config.NumberColumn(f"Consumo {periodo_label.lower()} (kg)", min_value=0.0, step=0.001, format="%.3f"),
             "Consumo acumulado (kg)": st.column_config.NumberColumn("Consumo acumulado (kg)", disabled=True, format="%.3f"),
-            "Producto periodo (kg/L)": st.column_config.NumberColumn(f"Producto diario ({producto.unidad})", disabled=True, format="%.3f"),
-            "Precio periodo ($)": st.column_config.NumberColumn("Precio diario ($)", disabled=True, format="%.2f"),
+            "Producto periodo (kg/L)": st.column_config.NumberColumn(f"Producto {periodo_label.lower()} ({producto.unidad})", disabled=True, format="%.3f"),
+            "Precio periodo ($)": st.column_config.NumberColumn(f"Precio {periodo_label.lower()} ($)", disabled=True, format="%.2f"),
             "Producto acumulado (kg/L)": st.column_config.NumberColumn(f"Producto acumulado ({producto.unidad})", disabled=True, format="%.3f"),
             "Precio acumulado ($)": st.column_config.NumberColumn("Precio acumulado ($)", disabled=True, format="%.2f"),
         }
+        if subespecie == "Ponedoras":
+            column_config["Días de tratamiento"] = st.column_config.NumberColumn("Días de tratamiento", disabled=True)
 
         edited_df = st.data_editor(df_base, column_config=column_config, use_container_width=True, num_rows="fixed")
 
@@ -675,13 +678,16 @@ def main():
         if principio_activo_total != producto_total_completo:
             st.caption(f"* El principio activo requerido es {principio_activo_total:.3f} {producto.unidad}, pero se deben comprar {termino_unidad.lower()} completos: {envases_necesarios} × {presentacion} {producto.unidad} = {producto_total_completo:.3f} {producto.unidad}. Precio basado en esta cantidad.")
 
-        # Descargar CSV
+        # Descargar CSV con metadatos
         resumen = {
             "Parámetro": [
                 "Especie", "Tipo de ave" if especie == "Aves" else "Cerdos",
                 "Línea genética" if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
                 "Producto", "Código", "Presentación", "Precio por unidad",
-                "Dosis seleccionada", "Duración (inicio)", "Duración (fin)",
+                "Dosis seleccionada",
+                "Duración (inicio)" + (" semana" if subespecie == "Ponedoras" else " día"),
+                "Duración (fin)" + (" semana" if subespecie == "Ponedoras" else " día"),
+                "Días de tratamiento por semana" if subespecie == "Ponedoras" else "N/A",
                 "Número de animales", "Alimento total (ton)", "Principio activo total necesario",
                 "Producto total en unidades completas", "Número de sacos/envases", "Precio estimado"
             ],
@@ -690,7 +696,10 @@ def main():
                 linea if especie == "Aves" and subespecie in ["Broilers", "Ponedoras"] else "N/A",
                 producto.nombre, producto.codigo, f"{producto.presentacion_kg} {producto.unidad}",
                 f"${producto.precio:.2f}", f"{dosis_elegida} {unidad_dosis}",
-                dia_inicio, dia_fin, num_animales,
+                semana_inicio if subespecie == "Ponedoras" else dia_inicio,
+                semana_fin if subespecie == "Ponedoras" else dia_fin,
+                dias_tratamiento if subespecie == "Ponedoras" else "N/A",
+                num_animales,
                 f"{total_alimento_ton:.2f} ton", f"{principio_activo_total:.3f} {producto.unidad}",
                 f"{producto_total_completo:.3f} {producto.unidad}",
                 f"{envases_necesarios} {termino_unidad.lower()}",
@@ -708,9 +717,9 @@ def main():
         csv = df_completo.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Descargar tabla completa (CSV)", data=csv, file_name="tabla_tratamiento_completa.csv", mime="text/csv")
 
-    else:  # Biológicos (vacunas)
+    else:  # Biológicos
         # ------------------------------------------------------------
-        # MÓDULO BIOLÓGICOS: Vacunas (sin cambios)
+        # MÓDULO BIOLÓGICOS (vacunas) - SIN CAMBIOS
         # ------------------------------------------------------------
         st.header("Biológicos - Planes Vacunales")
         st.markdown("Edita la presentación y el precio por ampolla de cada vacuna. Los costos se actualizan automáticamente.")
